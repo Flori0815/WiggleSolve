@@ -1,0 +1,20 @@
+{
+  "name": "core-js",
+  "version": "1.0.0",
+  "description": "WiggleSolve core math and kinematics engine",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "test": "jest",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2",
+    "@types/jest": "^29.5.5"
+  }
+}
