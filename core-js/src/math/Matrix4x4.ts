@@ -108,6 +108,30 @@ export class Matrix4x4 {
     return [te[12], te[13], te[14]];
   }
 
+  transformVector(v: Vector3): Vector3 {
+    const te = this.elements;
+    const x = v.x, y = v.y, z = v.z;
+    const w = te[3] * x + te[7] * y + te[11] * z + te[15];
+    const invW = 1 / (w || 1);
+
+    return new Vector3(
+      (te[0] * x + te[4] * y + te[8] * z + te[12]) * invW,
+      (te[1] * x + te[5] * y + te[9] * z + te[13]) * invW,
+      (te[2] * x + te[6] * y + te[10] * z + te[14]) * invW
+    );
+  }
+
+  rotateVector(v: Vector3): Vector3 {
+    const te = this.elements;
+    const x = v.x, y = v.y, z = v.z;
+
+    return new Vector3(
+      te[0] * x + te[4] * y + te[8] * z,
+      te[1] * x + te[5] * y + te[9] * z,
+      te[2] * x + te[6] * y + te[10] * z
+    );
+  }
+
   clone(): Matrix4x4 {
     const m = new Matrix4x4();
     m.elements.set(this.elements);

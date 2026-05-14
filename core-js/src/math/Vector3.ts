@@ -13,6 +13,28 @@ export class Vector3 {
     );
   }
 
+  length(): number {
+    return Math.sqrt(this.x * this.x + this.y * this.y + this.z * this.z);
+  }
+
+  normalize(): Vector3 {
+    const len = this.length();
+    if (len === 0) return new Vector3(0, 0, 0);
+    return new Vector3(this.x / len, this.y / len, this.z / len);
+  }
+
+  sub(v: Vector3): Vector3 {
+    return new Vector3(this.x - v.x, this.y - v.y, this.z - v.z);
+  }
+
+  add(v: Vector3): Vector3 {
+    return new Vector3(this.x + v.x, this.y + v.y, this.z + v.z);
+  }
+
+  scale(s: number): Vector3 {
+    return new Vector3(this.x * s, this.y * s, this.z * s);
+  }
+
   distanceTo(v: Vector3): number {
     const dx = this.x - v.x;
     const dy = this.y - v.y;
@@ -22,5 +44,9 @@ export class Vector3 {
 
   clone(): Vector3 {
     return new Vector3(this.x, this.y, this.z);
+  }
+
+  static sub(a: Vector3, b: Vector3): Vector3 {
+    return new Vector3(a.x - b.x, a.y - b.y, a.z - b.z);
   }
 }
