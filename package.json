@@ -1,0 +1,8 @@
+{
+  "name": "wigglesolve",
+  "private": true,
+  "workspaces": [
+    "core-js",
+    "tooling-ui"
+  ]
+}
