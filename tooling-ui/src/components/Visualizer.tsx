@@ -9,6 +9,7 @@ interface VisualizerProps {
 }
 
 const KinematicRenderer: React.FC<{ system: KinematicSystem }> = ({ system }) => {
+  // Use useFrame to update matrices every frame instead of recreating elements
   const elements = useMemo(() => {
     const nodes: any[] = [];
     const links: any[] = [];

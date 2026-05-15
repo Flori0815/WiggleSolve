@@ -124,7 +124,7 @@ function App() {
       </div>
 
       <div className="main-view" style={{ flex: 1, position: 'relative' }}>
-        <Visualizer system={system} key={tick} />
+        <Visualizer system={system} />
       </div>
     </div>
   );
