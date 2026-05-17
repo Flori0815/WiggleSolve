@@ -53,7 +53,7 @@ function App() {
   });
 
   // Re-calculate FK when joint values change
-  const [tick, setTick] = useState(0);
+  const [, setTick] = useState(0);
   useEffect(() => {
     const j1 = system.joints.get('joint1');
     const j2 = system.joints.get('joint2');
