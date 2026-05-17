@@ -1,5 +1,13 @@
 export class Vector3 {
-  constructor(public x: number = 0, public y: number = 0, public z: number = 0) {}
+  public x: number;
+  public y: number;
+  public z: number;
+
+  constructor(x: number = 0, y: number = 0, z: number = 0) {
+    this.x = x;
+    this.y = y;
+    this.z = z;
+  }
 
   dot(v: Vector3): number {
     return this.x * v.x + this.y * v.y + this.z * v.z;
