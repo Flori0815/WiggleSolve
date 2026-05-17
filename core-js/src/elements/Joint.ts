@@ -5,13 +5,16 @@ export type JointType = 'revolute' | 'prismatic' | 'fixed';
 export class Joint {
   public id: string;
   public type: JointType;
+  /** Local axis of rotation or translation */
   public axis: [number, number, number];
+  /** The dynamic value of the joint */
   public value: number;
+  /** Lower and upper bounds [min, max] */
   public limits: [number, number];
 
   constructor(
     id: string,
-    type: JointType = 'fixed',
+    type: JointType = 'revolute',
     axis: [number, number, number] = [0, 0, 1],
     value: number = 0,
     limits: [number, number] = [-Infinity, Infinity]
@@ -23,24 +26,22 @@ export class Joint {
     this.limits = limits;
   }
 
+  /**
+   * Generates a 4x4 matrix representing the relative transformation 
+   * caused by this joint's current value.
+   */
   getTransformMatrix(): Matrix4x4 {
     const m = new Matrix4x4();
     const [ax, ay, az] = this.axis;
 
     if (this.type === 'revolute') {
-      // For simplicity in this initial version, we assume axis is one of standard X, Y, Z
-      // If it's more complex, we would need a general rotation around an axis
       if (ax === 1) return m.rotateX(this.value);
       if (ay === 1) return m.rotateY(this.value);
       if (az === 1) return m.rotateZ(this.value);
-
-      // Fallback for non-standard axes (simplified)
-      // In a real scenario, this would use Rodrigues' rotation formula
       return m.rotateZ(this.value);
     } else if (this.type === 'prismatic') {
       return m.translate(ax * this.value, ay * this.value, az * this.value);
     }
-
-    return m; // 'fixed' returns identity
+    return m;
   }
 }

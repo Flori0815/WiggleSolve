@@ -1,105 +1,64 @@
 import React, { useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
+import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid } from '@react-three/drei';
 import * as THREE from 'three';
-import { KinematicSystem } from 'core-js/src/system/KinematicSystem';
+import { KinematicSystem } from 'core-js/src/index';
 
 interface VisualizerProps {
   system: KinematicSystem;
+  version: number;
 }
 
 const KinematicRenderer: React.FC<{ system: KinematicSystem, version: number }> = ({ system, version }) => {
-  // We use the version to recreate the geometry/mesh structure when the system structure changes
-  const { nodes, links } = useMemo(() => {
-    const nodeMeshes: React.ReactNode[] = [];
-    const linkLines: React.ReactNode[] = [];
+  const elements = useMemo(() => {
+    const meshes: React.ReactNode[] = [];
 
-    // Render nodes
-    system.nodes.forEach((node) => {
-      nodeMeshes.push(
-        <group key={`node-group-${node.id}`} name={`node-${node.id}`}>
-          <mesh name={`mesh-${node.id}`}>
-            <sphereGeometry args={[0.04, 16, 16]} />
-            <meshStandardMaterial color="#aa3bff" />
+    // 1. Render all Nodes in the system (Body-attached and Global)
+    system.nodes.forEach(node => {
+      const matrix = new THREE.Matrix4().fromArray(Array.from(node.absoluteTransform.elements));
+      meshes.push(
+        <group key={`node-${node.id}`} matrix={matrix} matrixAutoUpdate={false}>
+          <mesh>
+            <sphereGeometry args={[0.02]} />
+            <meshStandardMaterial color={node.isLocked ? "#ef4444" : "#aa3bff"} />
           </mesh>
-          <primitive object={new THREE.AxesHelper(0.15)} />
+          <primitive object={new THREE.AxesHelper(0.08)} />
         </group>
       );
     });
 
-    // Render links as lines between parent and child nodes
-    system.connections.forEach((conn, index) => {
-      const parentNode = system.nodes.get(conn.parentNodeId);
-      const childNode = system.nodes.get(conn.childNodeId);
-
-      if (parentNode && childNode) {
-        const points = [new THREE.Vector3(), new THREE.Vector3()];
-        const geometry = new THREE.BufferGeometry().setFromPoints(points);
-
-        linkLines.push(
-          <line key={`link-${index}`} name={`link-${index}`}>
-            <primitive object={geometry} attach="geometry" />
-            <lineBasicMaterial color="#666" linewidth={1} />
-          </line>
-        );
+    // 2. Render rigid structure for each body
+    system.bodies.forEach(body => {
+      const nodes = Array.from(body.nodes.values());
+      if (nodes.length > 1) {
+        for (let i = 0; i < nodes.length - 1; i++) {
+          for (let j = i + 1; j < nodes.length; j++) {
+            const p1 = new THREE.Vector3().setFromMatrixPosition(
+              new THREE.Matrix4().fromArray(Array.from(nodes[i].absoluteTransform.elements))
+            );
+            const p2 = new THREE.Vector3().setFromMatrixPosition(
+              new THREE.Matrix4().fromArray(Array.from(nodes[j].absoluteTransform.elements))
+            );
+            const points = [p1, p2];
+            const geometry = new THREE.BufferGeometry().setFromPoints(points);
+            meshes.push(
+              <line key={`body-wire-${body.id}-${i}-${j}`}>
+                <primitive object={geometry} attach="geometry" />
+                <lineBasicMaterial color="#444" linewidth={1} transparent opacity={0.5} />
+              </line>
+            );
+          }
+        }
       }
     });
 
-    return { nodes: nodeMeshes, links: linkLines };
+    return meshes;
   }, [system, version]);
 
-  const nodeGroupRef = React.useRef<THREE.Group>(null);
-  const linkGroupRef = React.useRef<THREE.Group>(null);
-
-  // Use useFrame to update matrices every frame
-  useFrame(() => {
-    if (nodeGroupRef.current) {
-      system.nodes.forEach((node) => {
-        const group = nodeGroupRef.current?.getObjectByName(`node-${node.id}`);
-        if (group) {
-          group.matrix.fromArray(Array.from(node.absoluteTransform.elements));
-          group.matrixAutoUpdate = false;
-        }
-      });
-    }
-
-    if (linkGroupRef.current) {
-      system.connections.forEach((conn, index) => {
-        const line = linkGroupRef.current?.getObjectByName(`link-${index}`) as THREE.Line;
-        if (line) {
-          const parentNode = system.nodes.get(conn.parentNodeId);
-          const childNode = system.nodes.get(conn.childNodeId);
-          if (parentNode && childNode) {
-            const pPos = new THREE.Vector3().setFromMatrixPosition(
-              new THREE.Matrix4().fromArray(Array.from(parentNode.absoluteTransform.elements))
-            );
-            const cPos = new THREE.Vector3().setFromMatrixPosition(
-              new THREE.Matrix4().fromArray(Array.from(childNode.absoluteTransform.elements))
-            );
-            
-            const positions = line.geometry.attributes.position.array as Float32Array;
-            positions[0] = pPos.x;
-            positions[1] = pPos.y;
-            positions[2] = pPos.z;
-            positions[3] = cPos.x;
-            positions[4] = cPos.y;
-            positions[5] = cPos.z;
-            line.geometry.attributes.position.needsUpdate = true;
-          }
-        }
-      });
-    }
-  });
-
-  return (
-    <>
-      <group ref={nodeGroupRef}>{nodes}</group>
-      <group ref={linkGroupRef}>{links}</group>
-    </>
-  );
+  return <>{elements}</>;
 };
 
-export const Visualizer: React.FC<VisualizerProps & { version: number }> = ({ system, version }) => {
+export const Visualizer: React.FC<VisualizerProps> = ({ system, version }) => {
   return (
     <div style={{ width: '100%', height: '100%', background: '#111' }}>
       <Canvas camera={{ position: [1.5, 1.5, 1.5], fov: 50 }}>

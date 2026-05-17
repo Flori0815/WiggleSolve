@@ -1,68 +1,122 @@
 import { Node } from '../elements/Node';
 import { Joint } from '../elements/Joint';
-import { Link } from '../elements/Link';
-
-export interface Connection {
-  parentNodeId: string;
-  jointId: string;
-  linkId: string;
-  childNodeId: string;
-}
+import { RigidBody } from '../elements/RigidBody';
+import { Vector3 } from '../math/Vector3';
+import { Matrix4x4 } from '../math/Matrix4x4';
 
 export class KinematicSystem {
+  public bodies: Map<string, RigidBody> = new Map();
   public nodes: Map<string, Node> = new Map();
   public joints: Map<string, Joint> = new Map();
-  public links: Map<string, Link> = new Map();
-  public connections: Connection[] = [];
 
-  addNode(node: Node): void {
+  addBody(body: RigidBody): void {
+    this.bodies.set(body.id, body);
+    for (const node of body.nodes.values()) {
+      this.nodes.set(node.id, node);
+    }
+  }
+
+  addNode(node: Node, bodyId?: string): void {
     this.nodes.set(node.id, node);
+    if (bodyId) {
+      const body = this.bodies.get(bodyId);
+      if (body) body.addNode(node);
+    }
   }
 
   addJoint(joint: Joint): void {
     this.joints.set(joint.id, joint);
   }
 
-  addLink(link: Link): void {
-    this.links.set(link.id, link);
-  }
-
-  connect(parentNodeId: string, jointId: string, linkId: string, childNodeId: string): void {
-    this.connections.push({ parentNodeId, jointId, linkId, childNodeId });
-  }
-
   updateForwardKinematics(): void {
-    // Find root nodes (nodes that are not children in any connection)
-    const childNodeIds = new Set(this.connections.map(c => c.childNodeId));
-    const rootNodes = Array.from(this.nodes.values()).filter(node => !childNodeIds.has(node.id));
-
-    // For each root node, start traversal
-    for (const root of rootNodes) {
-      this.traverse(root);
+    for (const body of this.bodies.values()) {
+      body.updateNodes();
     }
   }
 
-  private traverse(parentNode: Node): void {
-    // Find all connections where this node is the parent
-    const childrenConnections = this.connections.filter(c => c.parentNodeId === parentNode.id);
+  /**
+   * Applies a LookAt alignment to a node, modifying its localTransform.
+   * This is typically used during the definition phase.
+   */
+  solveNodeAlignment(nodeId: string): void {
+    const node = this.nodes.get(nodeId);
+    if (!node || !node.alignment.primaryTarget) return;
 
-    for (const conn of childrenConnections) {
-      const joint = this.joints.get(conn.jointId);
-      const link = this.links.get(conn.linkId);
-      const childNode = this.nodes.get(conn.childNodeId);
+    const targetNode = this.nodes.get(node.alignment.primaryTarget);
+    if (!targetNode) return;
 
-      if (joint && link && childNode) {
-        // Child Node (4x4) = Parent Node (4x4) * Joint Variable (4x4) * Link Offset (4x4)
-        const parentTransform = parentNode.absoluteTransform.clone();
-        const jointTransform = joint.getTransformMatrix();
-        const linkTransform = link.transform;
+    // Find parent body transform
+    let parentTransform = new Matrix4x4();
+    for (const body of this.bodies.values()) {
+      if (body.nodes.has(node.id)) {
+        parentTransform = body.transform.clone();
+        break;
+      }
+    }
 
-        childNode.absoluteTransform = parentTransform
-          .multiply(jointTransform)
-          .multiply(linkTransform);
+    const myPos = new Vector3(...node.absoluteTransform.getTranslation());
+    const targetPos = new Vector3(...targetNode.absoluteTransform.getTranslation());
+    const worldDir = targetPos.sub(myPos).normalize();
+    if (worldDir.length() < 1e-6) return;
 
-        // Recurse down
-        this.traverse(childNode);
+    const parentInv = parentTransform.clone().invert();
+    const desiredLocalDir = parentInv.rotateVector(worldDir).normalize();
+
+    // Create basis
+    const z = desiredLocalDir.clone();
+    let x = new Vector3(1, 0, 0);
+    if (Math.abs(z.dot(x)) > 0.99) x = new Vector3(0, 1, 0);
+    const y = z.cross(x).normalize();
+    x = y.cross(z).normalize();
+
+    const lookAtMat = new Matrix4x4();
+    const te = lookAtMat.elements;
+    const axis = node.alignment.primaryAxis || 'z';
+
+    if (axis === 'z') {
+      te[0] = x.x; te[1] = x.y; te[2] = x.z;
+      te[4] = y.x; te[5] = y.y; te[6] = y.z;
+      te[8] = z.x; te[9] = z.y; te[10] = z.z;
+    } else if (axis === 'x') {
+      te[0] = z.x; te[1] = z.y; te[2] = z.z;
+      te[4] = x.x; te[5] = x.y; te[6] = x.z;
+      te[8] = y.x; te[9] = y.y; te[10] = y.z;
+    } else {
+      te[0] = y.x; te[1] = y.y; te[2] = y.z;
+      te[4] = z.x; te[5] = z.y; te[6] = z.z;
+      te[8] = x.x; te[9] = x.y; te[10] = x.z;
+    }
+
+    const localPos = node.localTransform.getTranslation();
+    node.localTransform = lookAtMat.translate(localPos[0], localPos[1], localPos[2]);
+  }
+
+  /**
+   * Applies an explicit transformation to a set of bodies based on a joint value delta.
+   */
+  applyActuatorDelta(jointId: string, pivotNodeId: string, movingBodyIds: string[], deltaValue: number): void {
+    const joint = this.joints.get(jointId);
+    const pivot = this.nodes.get(pivotNodeId);
+    if (!joint || !pivot || Math.abs(deltaValue) < 1e-8) return;
+
+    const localStepMat = new Matrix4x4();
+    const axis = joint.axis;
+    if (joint.type === 'revolute') {
+        if (axis[0] === 1) localStepMat.rotateX(deltaValue);
+        else if (axis[1] === 1) localStepMat.rotateY(deltaValue);
+        else localStepMat.rotateZ(deltaValue);
+    } else {
+        localStepMat.translate(axis[0] * deltaValue, axis[1] * deltaValue, axis[2] * deltaValue);
+    }
+
+    const pivotInv = pivot.absoluteTransform.clone().invert();
+    const deltaT = pivot.absoluteTransform.clone().multiply(localStepMat).multiply(pivotInv);
+
+    for (const bodyId of movingBodyIds) {
+      const body = this.bodies.get(bodyId);
+      if (body) {
+        body.transform = deltaT.clone().multiply(body.transform);
+        body.updateNodes();
       }
     }
   }
