@@ -1,13 +1,18 @@
-import { KinematicSystem } from '../system/KinematicSystem';
-import { Condition, evaluateCondition } from './conditions';
-import { Operation, applyOperation } from './operations';
+import type { KinematicSystem } from '../system/KinematicSystem';
+import type { Condition } from './conditions';
+import { evaluateCondition } from './conditions';
+import type { Operation } from './operations';
+import { applyOperation } from './operations';
 
 export type Instruction =
   | { type: 'operation'; operation: Operation }
   | { type: 'loop'; max_iterations: number; condition: Condition; steps: Instruction[] };
 
 export class Executor {
-  constructor(private system: KinematicSystem) {}
+  private system: KinematicSystem;
+  constructor(system: KinematicSystem) {
+    this.system = system;
+  }
 
   execute(sequence: Instruction[]): boolean {
     for (const instruction of sequence) {
