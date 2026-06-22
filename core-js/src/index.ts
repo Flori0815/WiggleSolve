@@ -2,6 +2,7 @@ export * from './system/KinematicSystem';
 export * from './elements/Node';
 export * from './elements/RigidBody';
 export * from './elements/Joint';
+export * from './elements/Link';
 export * from './math/Vector3';
 export * from './math/Matrix4x4';
 export * from './solver/Executor';
