@@ -19,10 +19,13 @@ const KinematicRenderer: React.FC<{ system: KinematicSystem, version: number }> 
       meshes.push(
         <group key={`node-${node.id}`} matrix={matrix} matrixAutoUpdate={false}>
           <mesh>
-            <sphereGeometry args={[0.02]} />
-            <meshStandardMaterial color={node.isLocked ? "#ef4444" : "#aa3bff"} />
+            <sphereGeometry args={[0.05]} />
+            {node.isLocked
+              ? <meshStandardMaterial color="#ef4444" emissive="#7f1d1d" emissiveIntensity={0.5} />
+              : <meshStandardMaterial color="#aa3bff" emissive="#3b1a6b" emissiveIntensity={0.5} />
+            }
           </mesh>
-          <primitive object={new THREE.AxesHelper(0.08)} />
+          <primitive object={new THREE.AxesHelper(0.15)} />
         </group>
       );
     });
@@ -44,7 +47,7 @@ const KinematicRenderer: React.FC<{ system: KinematicSystem, version: number }> 
             meshes.push(
               <line key={`body-wire-${body.id}-${i}-${j}`}>
                 <primitive object={geometry} attach="geometry" />
-                <lineBasicMaterial color="#444" linewidth={1} transparent opacity={0.5} />
+                <lineBasicMaterial color="#888" linewidth={1} transparent opacity={0.5} />
               </line>
             );
           }
