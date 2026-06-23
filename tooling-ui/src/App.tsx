@@ -73,7 +73,7 @@ const NodeEditor = ({ node, isGlobal, collapsed, onToggleCollapse, onDelete, onU
   <div className="item">
     <div className="item-row clickable" onClick={onToggleCollapse}>
       <span className="bold">{collapsed ? '▶' : '▼'} {node.id} {isGlobal && '(Global)'}</span>
-      <button className="del-btn" onClick={(e) => { e.stopPropagation(); onDelete(); }}>×</button>
+      <button className="del-btn" aria-label={`Delete node ${node.id}`} onClick={(e) => { e.stopPropagation(); onDelete(); }}>×</button>
     </div>
     {!collapsed && (
       <div className="item-details">
@@ -95,7 +95,7 @@ const NodeEditor = ({ node, isGlobal, collapsed, onToggleCollapse, onDelete, onU
             </div>
          ))}
          <div className="alignment-section">
-            <span className="tiny-header">LookAt Align:</span>
+            <span className="tiny" style={{color: '#c084fc', marginTop: '5px'}}>LookAt Align:</span>
             <div className="align-row">
                <select value={node.alignment.primaryAxis || ''} onChange={e => { node.alignment.primaryAxis = e.target.value as any; onUpdate(); }}>
                   <option value="">Axis...</option><option value="x">X</option><option value="y">Y</option><option value="z">Z</option>
@@ -115,7 +115,7 @@ const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies, syste
   if (instr.type === 'loop') {
     return (
       <div className="sequence-item loop">
-        <div className="item-row"><span className="bold">LOOP</span><button className="del-btn" onClick={onDelete}>×</button></div>
+        <div className="item-row"><span className="bold">LOOP</span><button className="del-btn" aria-label="Delete loop instruction" onClick={onDelete}>×</button></div>
         <div className="item-details">
            <div className="slider-row"><span className="tiny">Iterations: {instr.max_iterations}</span>
            <input type="range" min={1} max={500} value={instr.max_iterations} onChange={e => { instr.max_iterations = parseInt(e.target.value); onUpdate(); }} /></div>
@@ -140,7 +140,7 @@ const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies, syste
     if (!joint) { joint = new Joint(op.jointId); system.addJoint(joint); (op as any).config = { type: 'revolute', axis: 'z' }; }
     return (
       <div className="sequence-item op">
-        <div className="item-row"><span className="bold">ALIGN</span><button className="del-btn" onClick={onDelete}>×</button></div>
+        <div className="item-row"><span className="bold">ALIGN</span><button className="del-btn" aria-label="Delete align instruction" onClick={onDelete}>×</button></div>
         <div className="op-form">
           <JointConfigEditor config={(op as any).config} onUpdate={() => {
               const coreAxis: [number, number, number] = (op as any).config.axis === 'x' ? [1,0,0] : ((op as any).config.axis === 'y' ? [0,1,0] : [0,0,1]);
@@ -261,18 +261,18 @@ function App() {
         <div className="sidebar-content">
           {activeTab === 'elements' && (
             <div className="elements-tab">
-              <section><div className="section-header"><h3>Global Nodes</h3><button className="add-btn" onClick={() => { const id = prompt('ID:'); if(id){ system.addNode(new Node(id)); incrementVersion(); } }}>+</button></div>
+              <section><div className="section-header"><h3>Global Nodes</h3><button className="add-btn" aria-label="Add global node" onClick={() => { const id = prompt('ID:'); if(id){ system.addNode(new Node(id)); incrementVersion(); } }}>+</button></div>
               {allNodeIds.filter(id => !allBodyIds.some(bid => system.bodies.get(bid)!.nodes.has(id))).map(id => (
                 <NodeEditor key={id} node={system.nodes.get(id)} isGlobal collapsed={collapsedItems.has(id)} onToggleCollapse={() => setCollapsedItems(prev => {const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })} onDelete={() => { system.nodes.delete(id); incrementVersion(); }} onUpdate={incrementVersion} allNodes={allNodeIds} />
               ))}</section>
-              <section><div className="section-header"><h3>Rigid Bodies</h3><button className="add-btn" onClick={() => { const id = prompt('ID:'); if(id){ system.addBody(new RigidBody(id)); incrementVersion(); } }}>+</button></div>
+              <section><div className="section-header"><h3>Rigid Bodies</h3><button className="add-btn" aria-label="Add rigid body" onClick={() => { const id = prompt('ID:'); if(id){ system.addBody(new RigidBody(id)); incrementVersion(); } }}>+</button></div>
               {allBodyIds.map(id => { const b = system.bodies.get(id)!; return (
-                <div key={id} className="item"><div className="item-row clickable" onClick={() => setCollapsedItems(prev => {const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })}><span className="bold">{collapsedItems.has(id) ? '▶' : '▼'} {id}</span><button className="del-btn" onClick={() => { system.bodies.delete(id); incrementVersion(); }}>×</button></div>
+                <div key={id} className="item"><div className="item-row clickable" onClick={() => setCollapsedItems(prev => {const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })}><span className="bold">{collapsedItems.has(id) ? '▶' : '▼'} {id}</span><button className="del-btn" aria-label={`Delete body ${id}`} onClick={() => { system.bodies.delete(id); incrementVersion(); }}>×</button></div>
                 {!collapsedItems.has(id) && <div className="item-details">
                   {['x','y','z'].map((axis, i) => (
                     <div key={axis} className="slider-row"><span className="tiny">World {axis.toUpperCase()}</span><input type="range" min={-2} max={2} step={0.01} value={b.transform.getTranslation()[i]} onChange={e => { const p = b.transform.getTranslation(); p[i] = parseFloat(e.target.value); b.transform = new Matrix4x4().translate(p[0],p[1],p[2]); incrementVersion(); }} /></div>
                   ))}
-                  <div className="nested-nodes"><div className="section-header small"><span>Attached Nodes</span><button className="add-btn tiny" onClick={() => { const nid = prompt('ID:'); if(nid){ const n = new Node(nid); system.addNode(n, id); incrementVersion(); } }}>+</button></div>
+                  <div className="nested-nodes"><div className="section-header small"><span>Attached Nodes</span><button className="add-btn tiny" aria-label={`Add node to ${id}`} onClick={() => { const nid = prompt('ID:'); if(nid){ const n = new Node(nid); system.addNode(n, id); incrementVersion(); } }}>+</button></div>
                   {Array.from(b.nodes.values()).map(n => <NodeEditor key={n.id} node={n} collapsed={collapsedItems.has(n.id)} onToggleCollapse={() => setCollapsedItems(prev => {const n2 = new Set(prev); if(n2.has(n.id)) n2.delete(n.id); else n2.add(n.id); return n2; })} onDelete={() => { b.nodes.delete(n.id); system.nodes.delete(n.id); incrementVersion(); }} onUpdate={incrementVersion} allNodes={allNodeIds} />)}</div>
                 </div>}</div>
               );})}</section>
@@ -280,9 +280,9 @@ function App() {
           )}
           {activeTab === 'sequence' && (
             <div className="sequence-tab">
-               <section><div className="section-header"><h3>Actuators</h3><button className="add-btn" onClick={() => { const id = prompt('ID:'); if(id) setActuators({...actuators, [id]: {id, type:'revolute', axis:'z', pivotNode:'', movingBodies:[], value:0}}); }}>+</button></div>
+               <section><div className="section-header"><h3>Actuators</h3><button className="add-btn" aria-label="Add actuator" onClick={() => { const id = prompt('ID:'); if(id) setActuators({...actuators, [id]: {id, type:'revolute', axis:'z', pivotNode:'', movingBodies:[], value:0}}); }}>+</button></div>
                {Object.values(actuators).map(a => (
-                 <div key={a.id} className="item"><div className="item-row"><span className="bold tiny">{a.id}</span><button className="del-btn" onClick={() => { const n = {...actuators}; delete n[a.id]; setActuators(n); }}>×</button></div>
+                 <div key={a.id} className="item"><div className="item-row"><span className="bold tiny">{a.id}</span><button className="del-btn" aria-label={`Delete actuator ${a.id}`} onClick={() => { const n = {...actuators}; delete n[a.id]; setActuators(n); }}>×</button></div>
                  <JointConfigEditor config={a} onUpdate={() => setVersion(v => v + 1)} />
                  <div className="op-form">
                    <select value={a.pivotNode} onChange={e => { a.pivotNode = e.target.value; setVersion(v => v + 1); }}><option value="">Select Pivot...</option>{allNodeIds.map(id => <option key={id} value={id}>{id}</option>)}</select>
