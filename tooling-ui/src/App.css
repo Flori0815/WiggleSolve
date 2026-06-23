@@ -456,3 +456,14 @@ input[type="number"] {
   flex: 1;
   position: relative;
 }
+
+.empty-state {
+  font-size: 0.8rem;
+  color: #4b5563;
+  font-style: italic;
+  text-align: center;
+  padding: 12px 8px;
+  border: 1px dashed #2e303a;
+  border-radius: 6px;
+  margin: 0;
+}
