@@ -262,37 +262,60 @@ function App() {
         <div className="sidebar-content">
           {activeTab === 'elements' && (
             <div className="elements-tab">
-              <section><div className="section-header"><h3>Global Nodes</h3><button className="add-btn" aria-label="Add global node" onClick={() => { const id = prompt('ID:'); if(id){ system.addNode(new Node(id)); incrementVersion(); } }}>+</button></div>
-              {allNodeIds.filter(id => !allBodyIds.some(bid => system.bodies.get(bid)!.nodes.has(id))).map(id => (
-                <NodeEditor key={id} node={system.nodes.get(id)} isGlobal collapsed={collapsedItems.has(id)} onToggleCollapse={() => setCollapsedItems(prev => {const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })} onDelete={() => { system.nodes.delete(id); incrementVersion(); }} onUpdate={incrementVersion} allNodes={allNodeIds} />
-              ))}</section>
-              <section><div className="section-header"><h3>Rigid Bodies</h3><button className="add-btn" aria-label="Add rigid body" onClick={() => { const id = prompt('ID:'); if(id){ system.addBody(new RigidBody(id)); incrementVersion(); } }}>+</button></div>
-              {allBodyIds.map(id => { const b = system.bodies.get(id)!; return (
-                <div key={id} className="item"><div className="item-row clickable" onClick={() => setCollapsedItems(prev => {const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })}><span className="bold">{collapsedItems.has(id) ? '▶' : '▼'} {id}</span><button className="del-btn" aria-label={`Delete body ${id}`} onClick={() => { system.bodies.delete(id); incrementVersion(); }}>×</button></div>
-                {!collapsedItems.has(id) && <div className="item-details">
-                  {['x','y','z'].map((axis, i) => (
-                    <div key={axis} className="slider-row"><span className="tiny">World {axis.toUpperCase()}</span><input type="range" min={-2} max={2} step={0.01} value={b.transform.getTranslation()[i]} onChange={e => { const p = b.transform.getTranslation(); p[i] = parseFloat(e.target.value); b.transform = new Matrix4x4().translate(p[0],p[1],p[2]); incrementVersion(); }} /></div>
-                  ))}
-                  <div className="nested-nodes"><div className="section-header small"><span>Attached Nodes</span><button className="add-btn tiny" aria-label={`Add node to ${id}`} onClick={() => { const nid = prompt('ID:'); if(nid){ const n = new Node(nid); system.addNode(n, id); incrementVersion(); } }}>+</button></div>
-                  {Array.from(b.nodes.values()).map(n => <NodeEditor key={n.id} node={n} collapsed={collapsedItems.has(n.id)} onToggleCollapse={() => setCollapsedItems(prev => {const n2 = new Set(prev); if(n2.has(n.id)) n2.delete(n.id); else n2.add(n.id); return n2; })} onDelete={() => { b.nodes.delete(n.id); system.nodes.delete(n.id); incrementVersion(); }} onUpdate={incrementVersion} allNodes={allNodeIds} />)}</div>
-                </div>}</div>
-              );})}</section>
+              <section>
+                <div className="section-header"><h3>Global Nodes</h3><button className="add-btn" aria-label="Add global node" onClick={() => { const id = prompt('ID:'); if(id){ system.addNode(new Node(id)); incrementVersion(); } }}>+</button></div>
+                {allNodeIds.filter(id => !allBodyIds.some(bid => system.bodies.get(bid)!.nodes.has(id))).length === 0 && (
+                  <p className="empty-state">Add a node to place a standalone coordinate frame — useful for targets and world anchors.</p>
+                )}
+                {allNodeIds.filter(id => !allBodyIds.some(bid => system.bodies.get(bid)!.nodes.has(id))).map(id => (
+                  <NodeEditor key={id} node={system.nodes.get(id)} isGlobal collapsed={collapsedItems.has(id)} onToggleCollapse={() => setCollapsedItems(prev => {const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })} onDelete={() => { system.nodes.delete(id); incrementVersion(); }} onUpdate={incrementVersion} allNodes={allNodeIds} />
+                ))}
+              </section>
+              <section>
+                <div className="section-header"><h3>Rigid Bodies</h3><button className="add-btn" aria-label="Add rigid body" onClick={() => { const id = prompt('ID:'); if(id){ system.addBody(new RigidBody(id)); incrementVersion(); } }}>+</button></div>
+                {allBodyIds.length === 0 && (
+                  <p className="empty-state">Add a body to group nodes that move together as a rigid unit.</p>
+                )}
+                {allBodyIds.map(id => { const b = system.bodies.get(id)!; return (
+                  <div key={id} className="item"><div className="item-row clickable" onClick={() => setCollapsedItems(prev => {const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })}><span className="bold">{collapsedItems.has(id) ? '▶' : '▼'} {id}</span><button className="del-btn" aria-label={`Delete body ${id}`} onClick={() => { system.bodies.delete(id); incrementVersion(); }}>×</button></div>
+                  {!collapsedItems.has(id) && <div className="item-details">
+                    {['x','y','z'].map((axis, i) => (
+                      <div key={axis} className="slider-row"><span className="tiny">World {axis.toUpperCase()}</span><input type="range" min={-2} max={2} step={0.01} value={b.transform.getTranslation()[i]} onChange={e => { const p = b.transform.getTranslation(); p[i] = parseFloat(e.target.value); b.transform = new Matrix4x4().translate(p[0],p[1],p[2]); incrementVersion(); }} /></div>
+                    ))}
+                    <div className="nested-nodes"><div className="section-header small"><span>Attached Nodes</span><button className="add-btn tiny" aria-label={`Add node to ${id}`} onClick={() => { const nid = prompt('ID:'); if(nid){ const n = new Node(nid); system.addNode(n, id); incrementVersion(); } }}>+</button></div>
+                    {Array.from(b.nodes.values()).map(n => <NodeEditor key={n.id} node={n} collapsed={collapsedItems.has(n.id)} onToggleCollapse={() => setCollapsedItems(prev => {const n2 = new Set(prev); if(n2.has(n.id)) n2.delete(n.id); else n2.add(n.id); return n2; })} onDelete={() => { b.nodes.delete(n.id); system.nodes.delete(n.id); incrementVersion(); }} onUpdate={incrementVersion} allNodes={allNodeIds} />)}</div>
+                  </div>}</div>
+                );})}
+              </section>
             </div>
           )}
           {activeTab === 'sequence' && (
             <div className="sequence-tab">
-               <section><div className="section-header"><h3>Actuators</h3><button className="add-btn" aria-label="Add actuator" onClick={() => { const id = prompt('ID:'); if(id) setActuators({...actuators, [id]: {id, type:'revolute', axis:'z', pivotNode:'', movingBodies:[], value:0}}); }}>+</button></div>
-               {Object.values(actuators).map(a => (
-                 <div key={a.id} className="item"><div className="item-row"><span className="bold tiny">{a.id}</span><button className="del-btn" aria-label={`Delete actuator ${a.id}`} onClick={() => { const n = {...actuators}; delete n[a.id]; setActuators(n); }}>×</button></div>
-                 <JointConfigEditor config={a} onUpdate={() => setVersion(v => v + 1)} />
-                 <div className="op-form">
-                   <select value={a.pivotNode} onChange={e => { a.pivotNode = e.target.value; setVersion(v => v + 1); }}><option value="">Select Pivot...</option>{allNodeIds.map(id => <option key={id} value={id}>{id}</option>)}</select>
-                   <div className="joint-chips">{allBodyIds.map(id => <label key={id} className={`chip ${a.movingBodies.includes(id)?'active':''}`}><input type="checkbox" checked={a.movingBodies.includes(id)} onChange={e => { if(e.target.checked) a.movingBodies.push(id); else a.movingBodies = a.movingBodies.filter(v => v!==id); setVersion(v=>v+1); }} />{id}</label>)}</div>
+               <section>
+                 <div className="section-header"><h3>Actuators</h3><button className="add-btn" aria-label="Add actuator" onClick={() => { const id = prompt('ID:'); if(id) setActuators({...actuators, [id]: {id, type:'revolute', axis:'z', pivotNode:'', movingBodies:[], value:0}}); }}>+</button></div>
+                 {Object.keys(actuators).length === 0 && (
+                   <p className="empty-state">Add an actuator to drive a joint manually with the slider in Solved mode.</p>
+                 )}
+                 {Object.values(actuators).map(a => (
+                   <div key={a.id} className="item"><div className="item-row"><span className="bold tiny">{a.id}</span><button className="del-btn" aria-label={`Delete actuator ${a.id}`} onClick={() => { const n = {...actuators}; delete n[a.id]; setActuators(n); }}>×</button></div>
+                   <JointConfigEditor config={a} onUpdate={() => setVersion(v => v + 1)} />
+                   <div className="op-form">
+                     <select value={a.pivotNode} onChange={e => { a.pivotNode = e.target.value; setVersion(v => v + 1); }}><option value="">Select Pivot...</option>{allNodeIds.map(id => <option key={id} value={id}>{id}</option>)}</select>
+                     <div className="joint-chips">{allBodyIds.map(id => <label key={id} className={`chip ${a.movingBodies.includes(id)?'active':''}`}><input type="checkbox" checked={a.movingBodies.includes(id)} onChange={e => { if(e.target.checked) a.movingBodies.push(id); else a.movingBodies = a.movingBodies.filter(v => v!==id); setVersion(v=>v+1); }} />{id}</label>)}</div>
+                   </div>
+                   <div className="slider-row" style={{marginTop:'10px'}}><span className="tiny">Drive: {a.value.toFixed(2)}</span><input type="range" min={-Math.PI} max={Math.PI} step={0.01} value={a.value} onChange={e => setActuators({...actuators, [a.id]:{...a, value:parseFloat(e.target.value)}})} /></div>
+                   </div>
+                 ))}
+               </section>
+               <section>
+                 <div className="section-header"><h3>Loop Logic</h3></div>
+                 <div className="sequence-tree">
+                   {sequence.length === 0 && (
+                     <p className="empty-state">Add a loop to define the iterative constraint-solving sequence.</p>
+                   )}
+                   {sequence.map((instr, i) => <InstructionItem key={`root-${i}`} instr={instr} onUpdate={() => setVersion(v => v + 1)} onDelete={() => { sequence.splice(i, 1); setVersion(v => v + 1); }} allNodes={allNodeIds} allBodies={allBodyIds} system={system} />)}
                  </div>
-                 <div className="slider-row" style={{marginTop:'10px'}}><span className="tiny">Drive: {a.value.toFixed(2)}</span><input type="range" min={-Math.PI} max={Math.PI} step={0.01} value={a.value} onChange={e => setActuators({...actuators, [a.id]:{...a, value:parseFloat(e.target.value)}})} /></div>
-                 </div>
-               ))}</section>
-               <section><div className="section-header"><h3>Loop Logic</h3></div><div className="sequence-tree">{sequence.map((instr, i) => <InstructionItem key={`root-${i}`} instr={instr} onUpdate={() => setVersion(v => v + 1)} onDelete={() => { sequence.splice(i, 1); setVersion(v => v + 1); }} allNodes={allNodeIds} allBodies={allBodyIds} system={system} />)}</div></section>
+               </section>
             </div>
           )}
         </div>
