@@ -489,6 +489,35 @@ input[type="number"] {
   background: #fbbf24;
 }
 
+.inline-input-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inline-id-input {
+  background: #08060d;
+  border: 1px solid #2e303a;
+  color: #f3f4f6;
+  padding: 6px 8px;
+  border-radius: 4px;
+  font-size: var(--text-base);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.inline-id-input:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.1);
+}
+
+.inline-error {
+  font-size: var(--text-sm);
+  color: #ef4444;
+  padding: 2px 4px;
+}
+
 .main-view {
   flex: 1;
   position: relative;

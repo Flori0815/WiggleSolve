@@ -1,11 +1,11 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { 
-  KinematicSystem, 
-  Node, 
-  Joint, 
+import {
+  KinematicSystem,
+  Node,
+  Joint,
   RigidBody,
-  Matrix4x4, 
-  Executor 
+  Matrix4x4,
+  Executor
 } from 'core-js/src/index';
 import type { Instruction } from 'core-js/src/index';
 import { Visualizer } from './components/Visualizer';
@@ -23,6 +23,65 @@ type UIActuator = UIJointConfig & {
   pivotNode: string;
   movingBodies: string[];
   value: number;
+};
+
+type InlineInputState = {
+  isOpen: boolean;
+  value: string;
+  error: string;
+};
+
+// --- Components ---
+
+const InlineIdInput = ({
+  isOpen,
+  value,
+  error,
+  onChange,
+  onSubmit,
+  onCancel,
+  placeholder = 'Enter ID…'
+}: {
+  isOpen: boolean;
+  value: string;
+  error: string;
+  onChange: (v: string) => void;
+  onSubmit: () => void;
+  onCancel: () => void;
+  placeholder?: string;
+}) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isOpen]);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && value.trim()) {
+      onSubmit();
+    } else if (e.key === 'Escape') {
+      onCancel();
+    }
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <div className="inline-input-wrapper">
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        onKeyDown={handleKeyDown}
+        placeholder={placeholder}
+        className="inline-id-input"
+      />
+      {error && <div className="inline-error">{error}</div>}
+    </div>
+  );
 };
 
 // --- Helper Functions ---
@@ -43,8 +102,6 @@ function restoreSystemState(system: KinematicSystem, state: ReturnType<typeof cl
   system.nodes.forEach((n, id) => { if (state.nodeLocals[id]) n.localTransform.elements.set(state.nodeLocals[id]); });
   system.updateForwardKinematics();
 }
-
-// --- Components ---
 
 const JointConfigEditor = ({ config, onUpdate }: { config: UIJointConfig, onUpdate: () => void }) => (
   <div className="joint-config-box">
@@ -176,6 +233,10 @@ function App() {
   const [solverStatus, setSolverStatus] = useState<'idle' | 'converged' | 'timeout'>('idle');
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
   const [actuators, setActuators] = useState<Record<string, UIActuator>>({});
+  const [globalNodeInput, setGlobalNodeInput] = useState<InlineInputState>({ isOpen: false, value: '', error: '' });
+  const [bodyInput, setBodyInput] = useState<InlineInputState>({ isOpen: false, value: '', error: '' });
+  const [bodyNodeInput, setBodyNodeInput] = useState<InlineInputState & { bodyId?: string }>({ isOpen: false, value: '', error: '', bodyId: undefined });
+  const [actuatorInput, setActuatorInput] = useState<InlineInputState>({ isOpen: false, value: '', error: '' });
   const definitionStateRef = useRef<ReturnType<typeof cloneSystemState> | null>(null);
   const lastActuatorValues = useRef<Record<string, number>>({});
 
@@ -210,6 +271,62 @@ function App() {
     system.updateForwardKinematics();
     setVersion(v => v + 1);
   }, [system, appMode]);
+
+  const addGlobalNode = useCallback((id: string) => {
+    if (!id.trim()) {
+      setGlobalNodeInput(s => ({ ...s, error: 'ID cannot be empty' }));
+      return;
+    }
+    if (system.nodes.has(id)) {
+      setGlobalNodeInput(s => ({ ...s, error: `Node '${id}' already exists` }));
+      return;
+    }
+    system.addNode(new Node(id));
+    setGlobalNodeInput({ isOpen: false, value: '', error: '' });
+    incrementVersion();
+  }, [system, incrementVersion]);
+
+  const addBody = useCallback((id: string) => {
+    if (!id.trim()) {
+      setBodyInput(s => ({ ...s, error: 'ID cannot be empty' }));
+      return;
+    }
+    if (system.bodies.has(id)) {
+      setBodyInput(s => ({ ...s, error: `Body '${id}' already exists` }));
+      return;
+    }
+    system.addBody(new RigidBody(id));
+    setBodyInput({ isOpen: false, value: '', error: '' });
+    incrementVersion();
+  }, [system, incrementVersion]);
+
+  const addBodyNode = useCallback((bodyId: string, id: string) => {
+    if (!id.trim()) {
+      setBodyNodeInput(s => ({ ...s, error: 'ID cannot be empty' }));
+      return;
+    }
+    if (system.nodes.has(id)) {
+      setBodyNodeInput(s => ({ ...s, error: `Node '${id}' already exists` }));
+      return;
+    }
+    const n = new Node(id);
+    system.addNode(n, bodyId);
+    setBodyNodeInput({ isOpen: false, value: '', error: '', bodyId: undefined });
+    incrementVersion();
+  }, [system, incrementVersion]);
+
+  const addActuator = useCallback((id: string) => {
+    if (!id.trim()) {
+      setActuatorInput(s => ({ ...s, error: 'ID cannot be empty' }));
+      return;
+    }
+    if (actuators[id]) {
+      setActuatorInput(s => ({ ...s, error: `Actuator '${id}' already exists` }));
+      return;
+    }
+    setActuators({...actuators, [id]: {id, type:'revolute', axis:'z', pivotNode:'', movingBodies:[], value:0}});
+    setActuatorInput({ isOpen: false, value: '', error: '' });
+  }, [actuators]);
 
   useEffect(() => {
     if (appMode === 'solved') {
@@ -272,7 +389,24 @@ function App() {
           {activeTab === 'elements' && (
             <div className="elements-tab">
               <section>
-                <div className="section-header"><h3>Global Nodes</h3><button className="add-btn" aria-label="Add global node" onClick={() => { const id = prompt('ID:'); if(id){ system.addNode(new Node(id)); incrementVersion(); } }}>+</button></div>
+                <div className="section-header">
+                  {globalNodeInput.isOpen ? (
+                    <InlineIdInput
+                      isOpen={globalNodeInput.isOpen}
+                      value={globalNodeInput.value}
+                      error={globalNodeInput.error}
+                      onChange={v => setGlobalNodeInput(s => ({ ...s, value: v, error: '' }))}
+                      onSubmit={() => addGlobalNode(globalNodeInput.value)}
+                      onCancel={() => setGlobalNodeInput({ isOpen: false, value: '', error: '' })}
+                      placeholder="Node ID…"
+                    />
+                  ) : (
+                    <>
+                      <h3>Global Nodes</h3>
+                      <button className="add-btn" aria-label="Add global node" onClick={() => setGlobalNodeInput({ isOpen: true, value: '', error: '' })}>+</button>
+                    </>
+                  )}
+                </div>
                 {allNodeIds.filter(id => !allBodyIds.some(bid => system.bodies.get(bid)!.nodes.has(id))).length === 0 && (
                   <p className="empty-state">Add a node to place a standalone coordinate frame — useful for targets and world anchors.</p>
                 )}
@@ -281,7 +415,24 @@ function App() {
                 ))}
               </section>
               <section>
-                <div className="section-header"><h3>Rigid Bodies</h3><button className="add-btn" aria-label="Add rigid body" onClick={() => { const id = prompt('ID:'); if(id){ system.addBody(new RigidBody(id)); incrementVersion(); } }}>+</button></div>
+                <div className="section-header">
+                  {bodyInput.isOpen ? (
+                    <InlineIdInput
+                      isOpen={bodyInput.isOpen}
+                      value={bodyInput.value}
+                      error={bodyInput.error}
+                      onChange={v => setBodyInput(s => ({ ...s, value: v, error: '' }))}
+                      onSubmit={() => addBody(bodyInput.value)}
+                      onCancel={() => setBodyInput({ isOpen: false, value: '', error: '' })}
+                      placeholder="Body ID…"
+                    />
+                  ) : (
+                    <>
+                      <h3>Rigid Bodies</h3>
+                      <button className="add-btn" aria-label="Add rigid body" onClick={() => setBodyInput({ isOpen: true, value: '', error: '' })}>+</button>
+                    </>
+                  )}
+                </div>
                 {allBodyIds.length === 0 && (
                   <p className="empty-state">Add a body to group nodes that move together as a rigid unit.</p>
                 )}
@@ -291,7 +442,24 @@ function App() {
                     {['x','y','z'].map((axis, i) => (
                       <div key={axis} className="slider-row"><span className="tiny">World {axis.toUpperCase()}</span><input type="range" min={-2} max={2} step={0.01} value={b.transform.getTranslation()[i]} onChange={e => { const p = b.transform.getTranslation(); p[i] = parseFloat(e.target.value); b.transform = new Matrix4x4().translate(p[0],p[1],p[2]); incrementVersion(); }} /></div>
                     ))}
-                    <div className="nested-nodes"><div className="section-header small"><span>Attached Nodes</span><button className="add-btn tiny" aria-label={`Add node to ${id}`} onClick={() => { const nid = prompt('ID:'); if(nid){ const n = new Node(nid); system.addNode(n, id); incrementVersion(); } }}>+</button></div>
+                    <div className="nested-nodes"><div className="section-header small">
+                      {bodyNodeInput.isOpen && bodyNodeInput.bodyId === id ? (
+                        <InlineIdInput
+                          isOpen={bodyNodeInput.isOpen}
+                          value={bodyNodeInput.value}
+                          error={bodyNodeInput.error}
+                          onChange={v => setBodyNodeInput(s => ({ ...s, value: v, error: '' }))}
+                          onSubmit={() => addBodyNode(id, bodyNodeInput.value)}
+                          onCancel={() => setBodyNodeInput({ isOpen: false, value: '', error: '', bodyId: undefined })}
+                          placeholder="Node ID…"
+                        />
+                      ) : (
+                        <>
+                          <span>Attached Nodes</span>
+                          <button className="add-btn tiny" aria-label={`Add node to ${id}`} onClick={() => setBodyNodeInput({ isOpen: true, value: '', error: '', bodyId: id })}>+</button>
+                        </>
+                      )}
+                    </div>
                     {Array.from(b.nodes.values()).map(n => <NodeEditor key={n.id} node={n} collapsed={collapsedItems.has(n.id)} onToggleCollapse={() => setCollapsedItems(prev => {const n2 = new Set(prev); if(n2.has(n.id)) n2.delete(n.id); else n2.add(n.id); return n2; })} onDelete={() => { b.nodes.delete(n.id); system.nodes.delete(n.id); incrementVersion(); }} onUpdate={incrementVersion} allNodes={allNodeIds} />)}</div>
                   </div>}</div>
                 );})}
@@ -301,7 +469,24 @@ function App() {
           {activeTab === 'sequence' && (
             <div className="sequence-tab">
                <section>
-                 <div className="section-header"><h3>Actuators</h3><button className="add-btn" aria-label="Add actuator" onClick={() => { const id = prompt('ID:'); if(id) setActuators({...actuators, [id]: {id, type:'revolute', axis:'z', pivotNode:'', movingBodies:[], value:0}}); }}>+</button></div>
+                 <div className="section-header">
+                   {actuatorInput.isOpen ? (
+                     <InlineIdInput
+                       isOpen={actuatorInput.isOpen}
+                       value={actuatorInput.value}
+                       error={actuatorInput.error}
+                       onChange={v => setActuatorInput(s => ({ ...s, value: v, error: '' }))}
+                       onSubmit={() => addActuator(actuatorInput.value)}
+                       onCancel={() => setActuatorInput({ isOpen: false, value: '', error: '' })}
+                       placeholder="Actuator ID…"
+                     />
+                   ) : (
+                     <>
+                       <h3>Actuators</h3>
+                       <button className="add-btn" aria-label="Add actuator" onClick={() => setActuatorInput({ isOpen: true, value: '', error: '' })}>+</button>
+                     </>
+                   )}
+                 </div>
                  {Object.keys(actuators).length === 0 && (
                    <p className="empty-state">Add an actuator to drive a joint manually with the slider in Solved mode.</p>
                  )}
