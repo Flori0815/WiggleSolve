@@ -247,12 +247,13 @@ function App() {
   return (
     <div className="app-container">
       <div className="sidebar">
-        <div className="sidebar-header">
+        <div className={`sidebar-header mode-${appMode}`}>
           <h1>WiggleSolve</h1>
-          <div className="mode-toggle">
+          <div className={`mode-toggle mode-${appMode}`}>
             <button className={appMode === 'definition' ? 'active' : ''} onClick={() => appMode === 'solved' && toggleMode()}>Definition</button>
             <button className={appMode === 'solved' ? 'active' : ''} onClick={() => appMode === 'definition' && toggleMode()}>Solved</button>
           </div>
+          <p className="mode-hint">Switching to Solved mode snapshots the current definition.</p>
           <div className="tabs">
             <button className={activeTab === 'elements' ? 'active' : ''} onClick={() => setActiveTab('elements')}>Elements</button>
             <button className={activeTab === 'sequence' ? 'active' : ''} onClick={() => setActiveTab('sequence')}>Sequence</button>
