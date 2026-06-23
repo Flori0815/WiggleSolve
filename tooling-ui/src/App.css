@@ -1,10 +1,3 @@
-:root {
-  --text-sm: 0.75rem;
-  --text-base: 0.875rem;
-  --text-lg: 1rem;
-  --text-xl: 1.25rem;
-}
-
 * {
   box-sizing: border-box;
 }
@@ -41,7 +34,7 @@ body {
 .sidebar-header h1 {
   font-size: var(--text-xl);
   margin: 0 0 15px 0;
-  color: #c084fc;
+  color: var(--color-accent);
 }
 
 .tabs {
@@ -61,7 +54,7 @@ body {
 }
 
 .tabs button.active {
-  background: #c084fc;
+  background: var(--color-accent);
   color: #16171d;
 }
 
@@ -95,7 +88,7 @@ section {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #c084fc;
+  background: var(--color-accent);
   color: #16171d;
   font-weight: bold;
   font-size: var(--text-xl);
@@ -109,13 +102,13 @@ section {
   align-items: center;
   justify-content: center;
   background: transparent;
-  color: #ef4444;
-  border-color: #ef4444;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
   font-size: var(--text-base);
 }
 
 .del-btn:hover {
-  background: #ef4444;
+  background: var(--color-danger);
   color: #fff;
 }
 
@@ -123,6 +116,13 @@ section {
   font-weight: bold;
 }
 
+.tiny-header {
+  font-size: var(--text-sm);
+  font-weight: bold;
+  text-transform: uppercase;
+  color: var(--color-accent);
+  margin-top: 5px;
+}
 
 .clickable {
   cursor: pointer;
@@ -191,9 +191,9 @@ section {
 }
 
 .radio-chip.active {
-  background: rgba(192, 132, 252, 0.2);
-  border-color: #c084fc;
-  color: #c084fc;
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .radio-chip input {
@@ -241,7 +241,7 @@ section {
 
 .add-conn-btn {
   grid-column: span 2;
-  background: #c084fc;
+  background: var(--color-accent);
   color: #16171d;
   font-weight: bold;
   width: 100%;
@@ -280,7 +280,7 @@ section {
 
 input[type="range"] {
   width: 100%;
-  accent-color: #c084fc;
+  accent-color: var(--color-accent);
 }
 
 button {
@@ -320,21 +320,21 @@ button:hover {
 
 .conv-btn {
   background: #3e414d;
-  border: 1px solid #c084fc;
-  color: #c084fc;
+  border: 1px solid var(--color-accent);
+  color: var(--color-accent);
   font-weight: bold;
   margin: 10px 20px;
   width: calc(100% - 40px);
 }
 
 .conv-btn:hover {
-  background: rgba(192, 132, 252, 0.1);
+  background: color-mix(in srgb, var(--color-accent) 10%, transparent);
 }
 
 .axis-input {
   background: #08060d;
   border: 1px solid #2e303a;
-  color: #c084fc;
+  color: var(--color-accent);
   font-size: var(--text-sm);
   padding: 2px 5px;
   border-radius: 3px;
@@ -368,11 +368,11 @@ button:hover {
 }
 
 .sequence-item.loop {
-  border-left: 3px solid #c084fc;
+  border-left: 3px solid var(--color-loop);
 }
 
 .sequence-item.op {
-  border-left: 3px solid #6b7280;
+  border-left: 3px solid var(--color-op);
 }
 
 .condition-box, .op-form {
@@ -432,9 +432,9 @@ button:hover {
 }
 
 .chip.active {
-  background: rgba(192, 132, 252, 0.2);
-  border-color: #c084fc;
-  color: #c084fc;
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }
 
 .chip input {

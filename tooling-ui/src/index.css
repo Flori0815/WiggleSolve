@@ -4,6 +4,19 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  --text-sm: 0.75rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.25rem;
+
+  --color-accent:   #c084fc; /* interactive actions, active state */
+  --color-danger:   #ef4444; /* destructive actions only (delete) */
+  --color-anchor:   #f59e0b; /* locked/anchor node state (amber) */
+  --color-loop:     #c084fc; /* LOOP instruction accent */
+  --color-op:       #22d3ee; /* ALIGN instruction accent (cyan) */
+  --color-success:  #4ade80; /* solver converged */
+  --color-warning:  #fbbf24; /* solver timeout */
 }
 
 body {

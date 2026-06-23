@@ -24,7 +24,7 @@ const KinematicRenderer: React.FC<{ system: KinematicSystem, version: number }> 
               : <sphereGeometry args={[0.05]} />
             }
             {node.isLocked
-              ? <meshStandardMaterial color="#ef4444" emissive="#7f1d1d" emissiveIntensity={0.5} />
+              ? <meshStandardMaterial color="#f59e0b" emissive="#78350f" emissiveIntensity={0.5} />
               : <meshStandardMaterial color="#aa3bff" emissive="#3b1a6b" emissiveIntensity={0.5} />
             }
           </mesh>
