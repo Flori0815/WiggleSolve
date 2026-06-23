@@ -95,7 +95,7 @@ const NodeEditor = ({ node, isGlobal, collapsed, onToggleCollapse, onDelete, onU
             </div>
          ))}
          <div className="alignment-section">
-            <span className="tiny-header">LookAt Align:</span>
+            <span className="tiny" style={{color: '#c084fc', marginTop: '5px'}}>LookAt Align:</span>
             <div className="align-row">
                <select value={node.alignment.primaryAxis || ''} onChange={e => { node.alignment.primaryAxis = e.target.value as any; onUpdate(); }}>
                   <option value="">Axis...</option><option value="x">X</option><option value="y">Y</option><option value="z">Z</option>
