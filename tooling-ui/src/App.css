@@ -139,14 +139,6 @@ section {
   border-top: 1px dashed #2e303a;
 }
 
-.node-box {
-  background: #08060d;
-  border: 1px solid #2e303a;
-  border-radius: 6px;
-  padding: 10px;
-  margin-bottom: 10px;
-}
-
 .alignment-section {
   margin-top: 10px;
   padding-top: 5px;
@@ -163,16 +155,6 @@ section {
 .align-row select {
   font-size: 0.7rem;
   padding: 2px;
-}
-
-.actuator-toggle {
-  margin-top: 8px;
-  display: flex;
-  align-items: center;
-}
-
-.actuator-toggle input {
-  margin-right: 5px;
 }
 
 .axis-radios {
@@ -198,17 +180,6 @@ section {
 
 .radio-chip input {
   display: none;
-}
-
-.joint-def-box {
-  background: #08060d;
-  padding: 8px;
-  border-radius: 6px;
-  border: 1px solid #2e303a;
-}
-
-.no-pad {
-  padding: 0;
 }
 
 .slider-row {
@@ -237,13 +208,6 @@ section {
   padding: 2px 5px;
   border-radius: 3px;
   width: 100px;
-}
-
-.add-conn-btn {
-  grid-column: span 2;
-  background: #c084fc;
-  color: #16171d;
-  font-weight: bold;
 }
 
 .section-header.small {
@@ -275,6 +239,15 @@ section {
   display: flex;
   justify-content: space-between;
   margin-bottom: 5px;
+}
+
+.item-details {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid #2e303a;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 input[type="range"] {
@@ -312,41 +285,6 @@ button:hover {
   color: #9ca3af;
   padding: 6px;
   font-size: 0.8rem;
-}
-
-.conv-btn {
-  background: #3e414d;
-  border: 1px solid #c084fc;
-  color: #c084fc;
-  font-weight: bold;
-  margin: 10px 20px;
-  width: calc(100% - 40px);
-}
-
-.conv-btn:hover {
-  background: rgba(192, 132, 252, 0.1);
-}
-
-.axis-input {
-  background: #08060d;
-  border: 1px solid #2e303a;
-  color: #c084fc;
-  font-size: 0.75rem;
-  padding: 2px 5px;
-  border-radius: 3px;
-  width: 100%;
-  margin-top: 2px;
-}
-
-.conn-form-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 15px;
-}
-
-.conn-form-grid select {
-  width: 100%;
 }
 
 .sequence-tree {
@@ -405,12 +343,6 @@ button:hover {
   margin-top: 5px;
 }
 
-.multi-select {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-}
-
 .joint-chips {
   display: flex;
   flex-wrap: wrap;
@@ -443,13 +375,6 @@ input[type="number"] {
   font-size: 0.8rem;
   padding: 2px 5px;
   border-radius: 4px;
-}
-
-.note {
-  font-size: 0.8rem;
-  color: #6b7280;
-  font-style: italic;
-  margin-top: 20px;
 }
 
 .main-view {
