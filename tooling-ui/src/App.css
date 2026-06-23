@@ -1,3 +1,10 @@
+:root {
+  --text-sm: 0.75rem;
+  --text-base: 0.875rem;
+  --text-lg: 1rem;
+  --text-xl: 1.25rem;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -32,7 +39,7 @@ body {
 }
 
 .sidebar-header h1 {
-  font-size: 1.5rem;
+  font-size: var(--text-xl);
   margin: 0 0 15px 0;
   color: #c084fc;
 }
@@ -91,7 +98,7 @@ section {
   background: #c084fc;
   color: #16171d;
   font-weight: bold;
-  font-size: 1.2rem;
+  font-size: var(--text-xl);
 }
 
 .del-btn {
@@ -104,7 +111,7 @@ section {
   background: transparent;
   color: #ef4444;
   border-color: #ef4444;
-  font-size: 0.8rem;
+  font-size: var(--text-base);
 }
 
 .del-btn:hover {
@@ -116,13 +123,6 @@ section {
   font-weight: bold;
 }
 
-.tiny-header {
-  font-size: 0.65rem;
-  font-weight: bold;
-  text-transform: uppercase;
-  color: #c084fc;
-  margin-top: 5px;
-}
 
 .clickable {
   cursor: pointer;
@@ -161,7 +161,7 @@ section {
 }
 
 .align-row select {
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   padding: 2px;
 }
 
@@ -181,7 +181,7 @@ section {
 }
 
 .radio-chip {
-  font-size: 0.65rem;
+  font-size: var(--text-sm);
   background: #2e303a;
   padding: 2px 6px;
   border-radius: 4px;
@@ -219,7 +219,7 @@ section {
 }
 
 .slider-row .tiny {
-  font-size: 0.65rem;
+  font-size: var(--text-sm);
   color: #9ca3af;
   margin-bottom: -2px;
 }
@@ -233,7 +233,7 @@ section {
   background: #08060d;
   border: 1px solid #2e303a;
   color: #f3f4f6;
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   padding: 2px 5px;
   border-radius: 3px;
   width: 100px;
@@ -264,11 +264,11 @@ section {
   padding: 10px;
   border-radius: 6px;
   border: 1px solid #2e303a;
-  font-size: 0.9rem;
+  font-size: var(--text-base);
 }
 
 .item.small {
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   font-family: monospace;
 }
 
@@ -290,7 +290,7 @@ button {
   padding: 8px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 0.85rem;
+  font-size: var(--text-base);
 }
 
 button:hover {
@@ -315,7 +315,7 @@ button:hover {
   border: none;
   color: #9ca3af;
   padding: 6px;
-  font-size: 0.8rem;
+  font-size: var(--text-base);
 }
 
 .conv-btn {
@@ -335,7 +335,7 @@ button:hover {
   background: #08060d;
   border: 1px solid #2e303a;
   color: #c084fc;
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   padding: 2px 5px;
   border-radius: 3px;
   width: 100%;
@@ -386,9 +386,10 @@ button:hover {
 }
 
 .tiny {
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   color: #6b7280;
   text-transform: uppercase;
+  font-weight: 600;
 }
 
 .nested-steps {
@@ -404,7 +405,7 @@ button:hover {
 .add-nested-btn {
   background: #16171d;
   border: 1px dashed #3e414d;
-  font-size: 0.75rem;
+  font-size: var(--text-sm);
   color: #9ca3af;
   margin-top: 5px;
 }
@@ -422,7 +423,7 @@ button:hover {
 }
 
 .chip {
-  font-size: 0.7rem;
+  font-size: var(--text-sm);
   background: #2e303a;
   padding: 2px 6px;
   border-radius: 10px;
@@ -444,13 +445,13 @@ input[type="number"] {
   background: #08060d;
   border: 1px solid #2e303a;
   color: #f3f4f6;
-  font-size: 0.8rem;
+  font-size: var(--text-base);
   padding: 2px 5px;
   border-radius: 4px;
 }
 
 .note {
-  font-size: 0.8rem;
+  font-size: var(--text-base);
   color: #6b7280;
   font-style: italic;
   margin-top: 20px;
