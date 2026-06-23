@@ -1,0 +1,72 @@
+{
+  "system": {
+    "bodies": [
+      {
+        "id": "base_body",
+        "nodes": [
+          {
+            "id": "rail_start",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+          }
+        ]
+      },
+      {
+        "id": "slider_body",
+        "nodes": [
+          {
+            "id": "slider_effector",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+          }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 2, 0, 0, 1]
+      }
+    ],
+    "joints": [
+      {
+        "id": "slider_joint",
+        "type": "prismatic",
+        "axis": [1, 0, 0],
+        "limits": [0, 5]
+      }
+    ]
+  },
+  "actuators": [
+    {
+      "id": "slider_joint",
+      "type": "prismatic",
+      "axis": "x",
+      "pivotNode": "rail_start",
+      "movingBodies": ["slider_body"]
+    }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 50,
+      "condition": {
+        "type": "distance_less_than",
+        "nodeA": "slider_effector",
+        "nodeB": "target",
+        "threshold": 0.01
+      },
+      "steps": [
+        {
+          "type": "operation",
+          "operation": {
+            "type": "align_node",
+            "effectorNode": "slider_effector",
+            "targetNode": "target",
+            "pivotNode": "rail_start",
+            "jointId": "slider_joint",
+            "movingBodies": ["slider_body"]
+          }
+        }
+      ]
+    }
+  ]
+}
