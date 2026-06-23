@@ -244,6 +244,7 @@ section {
   background: #c084fc;
   color: #16171d;
   font-weight: bold;
+  width: 100%;
 }
 
 .section-header.small {
@@ -283,7 +284,6 @@ input[type="range"] {
 }
 
 button {
-  width: 100%;
   background: #2e303a;
   border: 1px solid #3e414d;
   color: #f3f4f6;
@@ -295,6 +295,10 @@ button {
 
 button:hover {
   background: #3e414d;
+}
+
+.btn-full {
+  width: 100%;
 }
 
 .mode-toggle {
