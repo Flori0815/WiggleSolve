@@ -19,7 +19,10 @@ const KinematicRenderer: React.FC<{ system: KinematicSystem, version: number }> 
       meshes.push(
         <group key={`node-${node.id}`} matrix={matrix} matrixAutoUpdate={false}>
           <mesh>
-            <sphereGeometry args={[0.05]} />
+            {node.isLocked
+              ? <boxGeometry args={[0.1, 0.1, 0.1]} />
+              : <sphereGeometry args={[0.05]} />
+            }
             {node.isLocked
               ? <meshStandardMaterial color="#ef4444" emissive="#7f1d1d" emissiveIntensity={0.5} />
               : <meshStandardMaterial color="#aa3bff" emissive="#3b1a6b" emissiveIntensity={0.5} />
@@ -63,7 +66,12 @@ const KinematicRenderer: React.FC<{ system: KinematicSystem, version: number }> 
 
 export const Visualizer: React.FC<VisualizerProps> = ({ system, version }) => {
   return (
-    <div style={{ width: '100%', height: '100%', background: '#111' }}>
+    <div
+      style={{ width: '100%', height: '100%', background: '#111' }}
+      tabIndex={0}
+      role="img"
+      aria-label="3D kinematic system viewport"
+    >
       <Canvas camera={{ position: [1.5, 1.5, 1.5], fov: 50 }}>
         <color attach="background" args={['#08060d']} />
         <ambientLight intensity={1.5} />
