@@ -4,6 +4,7 @@ import type { Instruction } from 'core-js/src/index';
 import { Visualizer } from './components/Visualizer';
 import { DefinitionEditor } from './components/DefinitionEditor';
 import { SolverPanel } from './components/SolverPanel';
+import { LiveSession } from './components/LiveSession';
 import { useKinematicSystem } from './hooks/useKinematicSystem';
 import { useDemoLoader } from './hooks/useDemoLoader';
 import type { UIActuator } from './types';
@@ -88,6 +89,7 @@ function App() {
               {solverStatus === 'converged' ? 'Converged' : 'Timeout — increase iterations'}
             </div>
           )}
+          <LiveSession onDefinitionReceived={loadDemo} />
           <p className="mode-hint">Switching to Solved mode snapshots the current definition.</p>
           <div className="tabs">
             <button className={activeTab === 'elements' ? 'active' : ''} onClick={() => setActiveTab('elements')}>Elements</button>

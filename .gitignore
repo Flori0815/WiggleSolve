@@ -229,3 +229,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Prevent TypeScript from emitting compiled JS into source directories
+core-js/src/**/*.js
+core-js/src/**/*.d.ts
