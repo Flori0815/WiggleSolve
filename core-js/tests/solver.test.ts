@@ -159,4 +159,63 @@ describe('RigidBody Architecture & Manual Solving', () => {
     expect(system.joints.size).toBe(2);
     expect(system.bodies.size).toBe(4); // body_a, body_b, body_c, body_target
   });
+
+  test('Executor returns false when loop fails to converge', () => {
+    const system = new KinematicSystem();
+
+    // Body A (Pivot)
+    const bodyA = new RigidBody('body_a');
+    const nodePivot = new Node('pivot');
+    bodyA.addNode(nodePivot);
+    system.addBody(bodyA);
+
+    // Body B (Arm)
+    const bodyB = new RigidBody('body_b');
+    const nodeEffector = new Node('effector');
+    nodeEffector.localTransform = new Matrix4x4().translate(1, 0, 0);
+    bodyB.addNode(nodeEffector);
+    system.addBody(bodyB);
+
+    // Target (Unreachable: distance 2)
+    const bodyTarget = new RigidBody('body_target');
+    const nodeTarget = new Node('target');
+    bodyTarget.transform = new Matrix4x4().translate(2, 0, 0);
+    bodyTarget.addNode(nodeTarget);
+    system.addBody(bodyTarget);
+
+    const joint = new Joint('j1', 'revolute', [0, 0, 1]);
+    system.addJoint(joint);
+
+    system.updateForwardKinematics();
+
+    const sequence: Instruction[] = [
+      {
+        type: 'loop',
+        max_iterations: 10,
+        condition: { type: 'distance_less_than', nodeA: 'effector', nodeB: 'target', threshold: 0.001 },
+        steps: [
+          {
+            type: 'operation',
+            operation: {
+              type: 'align_node',
+              effectorNode: 'effector',
+              targetNode: 'target',
+              pivotNode: 'pivot',
+              jointId: 'j1',
+              movingBodies: ['body_b']
+            }
+          }
+        ]
+      }
+    ];
+
+    const executor = new Executor(system);
+    const result = executor.execute(sequence);
+
+    expect(result).toBe(false);
+
+    const effectorPos = new Vector3(...system.nodes.get('effector')!.absoluteTransform.getTranslation());
+    const targetPos = new Vector3(...system.nodes.get('target')!.absoluteTransform.getTranslation());
+    expect(effectorPos.distanceTo(targetPos)).toBeGreaterThan(0.001);
+  });
 });
