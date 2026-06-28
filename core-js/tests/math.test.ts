@@ -71,6 +71,20 @@ describe('Math Primitives', () => {
   });
 });
 
+describe('Joint', () => {
+  test('Joint fixed type returns identity', () => {
+    const joint = new Joint('j-fixed', 'fixed');
+    const identity = new Matrix4x4();
+
+    // Default value (0)
+    expect(joint.getTransformMatrix().elements).toEqual(identity.elements);
+
+    // Non-zero value
+    joint.value = 42;
+    expect(joint.getTransformMatrix().elements).toEqual(identity.elements);
+  });
+});
+
 function buildTwoLinkArm(angleJ1: number, angleJ2: number): [number, number, number] {
   const system = new KinematicSystem();
 
