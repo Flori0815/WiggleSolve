@@ -19,71 +19,20 @@ import windTurbineYaw        from '@demos/wind_turbine_yaw.json';
 import kneeOrthosis          from '@demos/knee_orthosis.json';
 import telescopeAltaz        from '@demos/telescope_altaz.json';
 
-export type DemoNodeDef = {
-  id: string;
-  localTransform: number[];
-};
+import type {
+  DemoDefinition,
+} from '../schema';
 
-export type DemoBodyDef = {
-  id: string;
-  nodes: DemoNodeDef[];
-};
-
-export type DemoGlobalNodeDef = {
-  id: string;
-  absoluteTransform: number[];
-};
-
-export type DemoJointDef = {
-  id: string;
-  type: 'revolute' | 'prismatic';
-  axis: [number, number, number];
-  limits: [number, number];
-};
-
-export type DemoActuatorDef = {
-  id: string;
-  type: 'revolute' | 'prismatic';
-  axis: 'x' | 'y' | 'z';
-  pivotNode: string;
-  movingBodies: string[];
-};
-
-export type DemoStepDef = {
-  type: 'operation';
-  operation: {
-    type: 'align_node';
-    effectorNode: string;
-    targetNode: string;
-    pivotNode: string;
-    jointId: string;
-    movingBodies: string[];
-  };
-};
-
-export type DemoLoopDef = {
-  type: 'loop';
-  max_iterations: number;
-  condition: {
-    type: 'distance_less_than';
-    nodeA: string;
-    nodeB: string;
-    threshold: number;
-  };
-  steps: DemoStepDef[];
-};
-
-export type DemoDefinition = {
-  name: string;
-  description: string;
-  system: {
-    bodies: DemoBodyDef[];
-    globalNodes: DemoGlobalNodeDef[];
-    joints: DemoJointDef[];
-  };
-  actuators: DemoActuatorDef[];
-  sequence: DemoLoopDef[];
-};
+export type {
+  DemoNodeDef,
+  DemoBodyDef,
+  DemoGlobalNodeDef,
+  DemoJointDef,
+  DemoActuatorDef,
+  DemoStepDef,
+  DemoLoopDef,
+  DemoDefinition,
+} from '../schema';
 
 export type DemoEntry = {
   id: string;
