@@ -1,16 +1,12 @@
 {
-  "name": "wigglesolve",
+  "name": "wigglesolve-integration-js",
   "private": true,
-  "workspaces": [
-    "core-js",
-    "tooling-ui",
-    "test-suite/js"
-  ],
   "scripts": {
-    "test:integration": "npm run test -w wigglesolve-integration-js"
+    "test": "jest"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",
+    "@types/node": "^20.0.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.1.1",
     "typescript": "^5.2.2"
