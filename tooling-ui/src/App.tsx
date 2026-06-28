@@ -185,10 +185,12 @@ const NodeEditor = ({ node, isGlobal, collapsed, onToggleCollapse, onDelete, onU
                 value={isGlobal ? node.absoluteTransform.getTranslation()[i] : node.localTransform.getTranslation()[i]} 
                 onChange={e => {
                   const val = parseFloat(e.target.value);
-                  const pos = (isGlobal ? node.absoluteTransform : node.localTransform).getTranslation();
+                  const transform = (isGlobal ? node.absoluteTransform : node.localTransform).clone();
+                  const pos = transform.getTranslation();
                   pos[i] = val;
-                  if (isGlobal) node.absoluteTransform = new Matrix4x4().translate(pos[0], pos[1], pos[2]);
-                  else node.localTransform = new Matrix4x4().translate(pos[0], pos[1], pos[2]);
+                  transform.setTranslation(pos[0], pos[1], pos[2]);
+                  if (isGlobal) node.absoluteTransform = transform;
+                  else node.localTransform = transform;
                   onUpdate();
                 }} 
               />
@@ -567,7 +569,13 @@ function App() {
                   <div key={id} className="item"><div className="item-row clickable" onClick={() => setCollapsedItems(prev => {const n = new Set(prev); if(n.has(id)) n.delete(id); else n.add(id); return n; })}><span className="bold">{collapsedItems.has(id) ? '▶' : '▼'} {id}</span><button className="del-btn" aria-label={`Delete body ${id}`} onClick={() => { system.bodies.delete(id); incrementVersion(); }}>×</button></div>
                   {!collapsedItems.has(id) && <div className="item-details">
                     {['x','y','z'].map((axis, i) => (
-                      <div key={axis} className="slider-row"><span className="tiny">World {axis.toUpperCase()}</span><input type="range" min={-2} max={2} step={0.01} value={b.transform.getTranslation()[i]} onChange={e => { const p = b.transform.getTranslation(); p[i] = parseFloat(e.target.value); b.transform = new Matrix4x4().translate(p[0],p[1],p[2]); incrementVersion(); }} /></div>
+                      <div key={axis} className="slider-row"><span className="tiny">World {axis.toUpperCase()}</span><input type="range" min={-2} max={2} step={0.01} value={b.transform.getTranslation()[i]} onChange={e => {
+                        const transform = b.transform.clone();
+                        const p = transform.getTranslation();
+                        p[i] = parseFloat(e.target.value);
+                        b.transform = transform.setTranslation(p[0],p[1],p[2]);
+                        incrementVersion();
+                      }} /></div>
                     ))}
                     <div className="nested-nodes"><div className="section-header small">
                       {bodyNodeInput.isOpen && bodyNodeInput.bodyId === id ? (
