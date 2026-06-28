@@ -521,6 +521,7 @@ input[type="number"] {
 .main-view {
   flex: 1;
   position: relative;
+  height: 100vh;
 }
 
 .empty-state {
