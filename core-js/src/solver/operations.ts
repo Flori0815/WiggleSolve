@@ -92,5 +92,5 @@ export function applyOperation(system: KinematicSystem, operation: Operation): v
     return;
   }
 
-  throw new Error(`Unsupported operation type: ${(operation as any).type}`);
+  throw new Error(`Unsupported operation type: ${(operation as Operation).type}`);
 }

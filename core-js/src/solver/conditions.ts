@@ -23,5 +23,5 @@ export function evaluateCondition(system: KinematicSystem, condition: Condition)
     return posA.distanceTo(posB) < condition.threshold;
   }
 
-  throw new Error(`Unsupported condition type: ${(condition as any).type}`);
+  throw new Error(`Unsupported condition type: ${(condition as Condition).type}`);
 }
