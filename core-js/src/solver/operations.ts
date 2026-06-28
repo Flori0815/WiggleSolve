@@ -9,6 +9,7 @@ export interface Operation {
   pivotNode: string;
   jointId: string;
   movingBodies: string[];
+  damping?: number;
 }
 
 export function applyOperation(system: KinematicSystem, operation: Operation): void {
@@ -49,11 +50,11 @@ export function applyOperation(system: KinematicSystem, operation: Operation): v
       const projection = cross.dot(worldAxis);
       
       // Step size (with some damping for stability)
-      step = angle * projection * 0.5;
+      step = angle * projection * (operation.damping ?? 0.5);
 
     } else if (joint.type === 'prismatic') {
       const eToT = tPos.sub(ePos);
-      step = eToT.dot(worldAxis) * 0.5;
+      step = eToT.dot(worldAxis) * (operation.damping ?? 0.5);
     }
 
     if (Math.abs(step) < 1e-8) return;
