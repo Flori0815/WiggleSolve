@@ -173,6 +173,7 @@ function App() {
   const [version, setVersion] = useState(0);
   const [activeTab, setActiveTab] = useState<'elements' | 'sequence'>('elements');
   const [appMode, setAppMode] = useState<'definition' | 'solved'>('definition');
+  const [solverStatus, setSolverStatus] = useState<'idle' | 'converged' | 'timeout'>('idle');
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
   const [actuators, setActuators] = useState<Record<string, UIActuator>>({});
   const definitionStateRef = useRef<ReturnType<typeof cloneSystemState> | null>(null);
@@ -224,7 +225,8 @@ function App() {
             lastActuatorValues.current[a.id] = a.value;
         }
       });
-      new Executor(system).execute(sequence);
+      const result = new Executor(system).execute(sequence);
+      setSolverStatus(result ? 'converged' : 'timeout');
       setVersion(v => v + 1);
     }
   }, [actuators, appMode, system, sequence]);
@@ -236,6 +238,7 @@ function App() {
     } else {
       if (definitionStateRef.current) restoreSystemState(system, definitionStateRef.current);
       lastActuatorValues.current = {};
+      setSolverStatus('idle');
       setAppMode('definition');
     }
     setVersion(v => v + 1);
@@ -253,6 +256,12 @@ function App() {
             <button className={appMode === 'definition' ? 'active' : ''} onClick={() => appMode === 'solved' && toggleMode()}>Definition</button>
             <button className={appMode === 'solved' ? 'active' : ''} onClick={() => appMode === 'definition' && toggleMode()}>Solved</button>
           </div>
+          {appMode === 'solved' && solverStatus !== 'idle' && (
+            <div className={`solver-status ${solverStatus}`}>
+              <span className="solver-status-dot">●</span>
+              {solverStatus === 'converged' ? 'Converged' : 'Timeout — increase iterations'}
+            </div>
+          )}
           <p className="mode-hint">Switching to Solved mode snapshots the current definition.</p>
           <div className="tabs">
             <button className={activeTab === 'elements' ? 'active' : ''} onClick={() => setActiveTab('elements')}>Elements</button>

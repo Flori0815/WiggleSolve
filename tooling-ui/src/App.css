@@ -445,7 +445,6 @@ input[type="number"] {
   border-radius: 4px;
 }
 
-<<<<<<< HEAD
 .note {
   font-size: var(--text-base);
   color: #6b7280;
@@ -453,8 +452,43 @@ input[type="number"] {
   margin-top: 20px;
 }
 
-=======
->>>>>>> origin/cleanup-css-item-details-15246130371028079436
+.solver-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  padding: 6px 8px;
+  border-radius: 4px;
+  margin-top: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.solver-status.converged {
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.1);
+}
+
+.solver-status.timeout {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+
+.solver-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.solver-status.converged .solver-status-dot {
+  background: #4ade80;
+}
+
+.solver-status.timeout .solver-status-dot {
+  background: #fbbf24;
+}
+
 .main-view {
   flex: 1;
   position: relative;
