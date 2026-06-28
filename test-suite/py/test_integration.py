@@ -116,6 +116,17 @@ class TestParity:
         # Both implementations converge to ~2.0 for this definition
         assert abs(result['joint_values']['slider_joint'] - 2.0) < 0.05
 
+    def test_pan_tilt_effector_within_threshold_of_target(self):
+        result = load_and_run(DEFINITIONS_DIR / 'pan_tilt_camera.json')
+        effector = result['node_positions']['lens_tip']
+        assert _dist(effector, (0.3, 0.3, 0.4243)) < 0.05
+
+    def test_xyz_cnc_joint_values_match(self):
+        result = load_and_run(DEFINITIONS_DIR / 'xyz_cnc_machine.json')
+        assert abs(result['joint_values']['x_joint'] - 1.5) < 0.05
+        assert abs(result['joint_values']['y_joint'] - 1.2) < 0.05
+        assert abs(result['joint_values']['z_joint'] - (-0.8)) < 0.05
+
 
 @pytest.mark.parametrize('filename', DEMO_FILES)
 def test_demo_smoke(filename):

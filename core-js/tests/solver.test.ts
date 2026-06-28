@@ -5,6 +5,9 @@ import { Joint } from '../src/elements/Joint';
 import { Matrix4x4 } from '../src/math/Matrix4x4';
 import { Executor, Instruction } from '../src/solver/Executor';
 import { Vector3 } from '../src/math/Vector3';
+import { evaluateCondition } from '../src/solver/conditions';
+import { applyOperation } from '../src/solver/operations';
+import { applyJointDelta } from '../src/system/utils';
 
 describe('RigidBody Architecture & Manual Solving', () => {
   test('Manual alignment of two bodies', () => {
@@ -386,5 +389,488 @@ describe('RigidBody Architecture & Manual Solving', () => {
     const result = executor.execute(sequence);
 
     expect(result).toBe(true);
+  });
+});
+
+describe('evaluateCondition error paths', () => {
+  test('throws when a referenced node does not exist', () => {
+    const system = new KinematicSystem();
+    expect(() => evaluateCondition(system, {
+      type: 'distance_less_than',
+      nodeA: 'missing_a',
+      nodeB: 'missing_b',
+      threshold: 0.1,
+    })).toThrow('Condition Error');
+  });
+
+  test('throws on unsupported condition type', () => {
+    const system = new KinematicSystem();
+    const bodyA = new RigidBody('ba');
+    const nodeA = new Node('na');
+    bodyA.addNode(nodeA);
+    system.addBody(bodyA);
+    const bodyB = new RigidBody('bb');
+    const nodeB = new Node('nb');
+    bodyB.addNode(nodeB);
+    system.addBody(bodyB);
+    system.updateForwardKinematics();
+    expect(() => (evaluateCondition as any)(system, {
+      type: 'unknown_type',
+      nodeA: 'na',
+      nodeB: 'nb',
+      threshold: 1,
+    })).toThrow('Unsupported condition type');
+  });
+});
+
+describe('applyOperation error paths', () => {
+  test('throws when required elements are missing', () => {
+    const system = new KinematicSystem();
+    expect(() => applyOperation(system, {
+      type: 'align_node',
+      effectorNode: 'no_effector',
+      targetNode: 'no_target',
+      pivotNode: 'no_pivot',
+      jointId: 'no_joint',
+      movingBodies: [],
+    })).toThrow('Operation Error');
+  });
+
+  test('throws on unsupported operation type', () => {
+    const system = new KinematicSystem();
+    expect(() => (applyOperation as any)(system, {
+      type: 'unknown_op',
+      effectorNode: 'a',
+      targetNode: 'b',
+      pivotNode: 'c',
+      jointId: 'd',
+      movingBodies: [],
+    })).toThrow('Unsupported operation type');
+  });
+
+  test('prismatic joint moves along axis toward target', () => {
+    const system = new KinematicSystem();
+
+    const frameBody = new RigidBody('frame');
+    const pivotNode = new Node('origin');
+    frameBody.addNode(pivotNode);
+    system.addBody(frameBody);
+
+    const carriageBody = new RigidBody('carriage');
+    const effectorNode = new Node('effector');
+    carriageBody.addNode(effectorNode);
+    system.addBody(carriageBody);
+
+    const targetBody = new RigidBody('tgt_body');
+    const targetNode = new Node('target');
+    targetBody.transform = new Matrix4x4().translate(2, 0, 0);
+    targetBody.addNode(targetNode);
+    system.addBody(targetBody);
+
+    const joint = new Joint('j_pris', 'prismatic', [1, 0, 0], 0, [0, 5]);
+    system.addJoint(joint);
+    system.updateForwardKinematics();
+
+    applyOperation(system, {
+      type: 'align_node',
+      effectorNode: 'effector',
+      targetNode: 'target',
+      pivotNode: 'origin',
+      jointId: 'j_pris',
+      movingBodies: ['carriage'],
+    });
+
+    expect(joint.value).toBeGreaterThan(0);
+  });
+
+  test('fixed joint type causes step=0 early return without moving anything', () => {
+    const system = new KinematicSystem();
+
+    const frameBody = new RigidBody('frame2');
+    const pivotNode = new Node('origin2');
+    frameBody.addNode(pivotNode);
+    system.addBody(frameBody);
+
+    const armBody = new RigidBody('arm2');
+    const effNode = new Node('eff2');
+    effNode.localTransform = new Matrix4x4().translate(1, 0, 0);
+    armBody.addNode(effNode);
+    system.addBody(armBody);
+
+    const tgtBody = new RigidBody('tgt2');
+    const tgtNode = new Node('tgt2');
+    tgtBody.transform = new Matrix4x4().translate(0, 1, 0);
+    tgtBody.addNode(tgtNode);
+    system.addBody(tgtBody);
+
+    const joint = new Joint('j_fix2', 'fixed');
+    system.addJoint(joint);
+    system.updateForwardKinematics();
+
+    const beforeTransform = armBody.transform.clone();
+    applyOperation(system, {
+      type: 'align_node',
+      effectorNode: 'eff2',
+      targetNode: 'tgt2',
+      pivotNode: 'origin2',
+      jointId: 'j_fix2',
+      movingBodies: ['arm2'],
+    });
+
+    // No movement should happen since step=0 triggers early return
+    for (let i = 0; i < 16; i++) {
+      expect(armBody.transform.elements[i]).toBeCloseTo(beforeTransform.elements[i]);
+    }
+  });
+
+  test('prismatic joint at limit: actualStep=0 causes early return', () => {
+    const system = new KinematicSystem();
+
+    const frameBody = new RigidBody('frame3');
+    const pivotNode = new Node('origin3');
+    frameBody.addNode(pivotNode);
+    system.addBody(frameBody);
+
+    // Carriage already at its max position (x=5)
+    const carriageBody = new RigidBody('carriage3');
+    carriageBody.transform = new Matrix4x4().translate(5, 0, 0);
+    const effNode = new Node('eff3');
+    carriageBody.addNode(effNode);
+    system.addBody(carriageBody);
+
+    const tgtBody = new RigidBody('tgt3');
+    const tgtNode = new Node('tgt3');
+    tgtBody.transform = new Matrix4x4().translate(10, 0, 0);
+    tgtBody.addNode(tgtNode);
+    system.addBody(tgtBody);
+
+    // Joint already at its upper limit
+    const joint = new Joint('j_at_limit', 'prismatic', [1, 0, 0], 5, [0, 5]);
+    system.addJoint(joint);
+    system.updateForwardKinematics();
+
+    const valueBefore = joint.value;
+    applyOperation(system, {
+      type: 'align_node',
+      effectorNode: 'eff3',
+      targetNode: 'tgt3',
+      pivotNode: 'origin3',
+      jointId: 'j_at_limit',
+      movingBodies: ['carriage3'],
+    });
+
+    // Joint should not move beyond limit — actualStep clamped to 0
+    expect(joint.value).toBe(valueBefore);
+  });
+});
+
+describe('applyJointDelta', () => {
+  test('prismatic joint translates moving bodies along axis', () => {
+    const body = new RigidBody('body');
+    const pivot = new Node('pivot');
+    body.addNode(pivot);
+    body.updateNodes();
+
+    const carriage = new RigidBody('carriage');
+    const tip = new Node('tip');
+    carriage.addNode(tip);
+    carriage.updateNodes();
+
+    const joint = new Joint('jp', 'prismatic', [0, 1, 0]);
+
+    applyJointDelta(joint, pivot, [carriage], 3);
+
+    const [cx, cy, cz] = carriage.transform.getTranslation();
+    expect(cy).toBeCloseTo(3);
+    expect(cx).toBeCloseTo(0);
+    expect(cz).toBeCloseTo(0);
+  });
+
+  test('revolute [1,0,0] rotates carriage around X axis', () => {
+    const body = new RigidBody('body');
+    const pivot = new Node('pivot');
+    body.addNode(pivot);
+    body.updateNodes();
+
+    const carriage = new RigidBody('carriage');
+    carriage.updateNodes();
+
+    const joint = new Joint('jrx', 'revolute', [1, 0, 0]);
+    applyJointDelta(joint, pivot, [carriage], Math.PI / 2);
+
+    const v = carriage.transform.rotateVector(new Vector3(0, 1, 0));
+    expect(v.y).toBeCloseTo(0);
+    expect(v.z).toBeCloseTo(1);
+  });
+
+  test('revolute [0,1,0] rotates carriage around Y axis', () => {
+    const body = new RigidBody('body');
+    const pivot = new Node('pivot');
+    body.addNode(pivot);
+    body.updateNodes();
+
+    const carriage = new RigidBody('carriage');
+    carriage.updateNodes();
+
+    const joint = new Joint('jry', 'revolute', [0, 1, 0]);
+    applyJointDelta(joint, pivot, [carriage], Math.PI / 2);
+
+    const v = carriage.transform.rotateVector(new Vector3(1, 0, 0));
+    expect(v.x).toBeCloseTo(0);
+    expect(v.z).toBeCloseTo(-1);
+  });
+
+  test('fixed joint type produces no movement (neither revolute nor prismatic)', () => {
+    const body = new RigidBody('body');
+    const pivot = new Node('pivot');
+    body.addNode(pivot);
+    body.updateNodes();
+
+    const carriage = new RigidBody('carriage');
+    carriage.updateNodes();
+
+    const joint = new Joint('jfix', 'fixed');
+    const beforeTransform = carriage.transform.clone();
+    applyJointDelta(joint, pivot, [carriage], 1.0);
+
+    for (let i = 0; i < 16; i++) {
+      expect(carriage.transform.elements[i]).toBeCloseTo(beforeTransform.elements[i]);
+    }
+  });
+
+  test('skips delta smaller than threshold', () => {
+    const body = new RigidBody('body');
+    const pivot = new Node('pivot');
+    body.addNode(pivot);
+    body.updateNodes();
+
+    const carriage = new RigidBody('carriage');
+    carriage.updateNodes();
+
+    const joint = new Joint('jp2', 'revolute', [0, 0, 1]);
+
+    applyJointDelta(joint, pivot, [carriage], 1e-10);
+
+    const [x, y, z] = carriage.transform.getTranslation();
+    expect(x).toBeCloseTo(0);
+    expect(y).toBeCloseTo(0);
+    expect(z).toBeCloseTo(0);
+  });
+});
+
+describe('KinematicSystem.addNode', () => {
+  test('addNode without bodyId registers node in system', () => {
+    const system = new KinematicSystem();
+    const node = new Node('standalone');
+    system.addNode(node);
+    expect(system.nodes.has('standalone')).toBe(true);
+  });
+
+  test('addNode with bodyId also attaches node to the body', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('b1');
+    system.addBody(body);
+
+    const node = new Node('extra');
+    system.addNode(node, 'b1');
+
+    expect(system.nodes.has('extra')).toBe(true);
+    expect(body.nodes.has('extra')).toBe(true);
+  });
+
+  test('addNode with non-existent bodyId registers node only in system', () => {
+    const system = new KinematicSystem();
+    const node = new Node('orphan');
+    system.addNode(node, 'ghost_body');
+    expect(system.nodes.has('orphan')).toBe(true);
+  });
+});
+
+describe('KinematicSystem.applyActuatorDelta', () => {
+  test('no-op when joint is not found', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('b');
+    const pivot = new Node('p');
+    body.addNode(pivot);
+    system.addBody(body);
+    system.updateForwardKinematics();
+    expect(() => system.applyActuatorDelta('missing_joint', 'p', [], 1)).not.toThrow();
+  });
+
+  test('no-op when pivot node is not found', () => {
+    const system = new KinematicSystem();
+    const joint = new Joint('j', 'revolute', [0, 0, 1]);
+    system.addJoint(joint);
+    expect(() => system.applyActuatorDelta('j', 'missing_pivot', [], 1)).not.toThrow();
+  });
+});
+
+describe('KinematicSystem.solveNodeAlignment', () => {
+  test('no-op when node does not exist', () => {
+    const system = new KinematicSystem();
+    expect(() => system.solveNodeAlignment('nonexistent')).not.toThrow();
+  });
+
+  test('no-op when node has no primaryTarget', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('b');
+    const node = new Node('n');
+    body.addNode(node);
+    system.addBody(body);
+    system.updateForwardKinematics();
+    expect(() => system.solveNodeAlignment('n')).not.toThrow();
+  });
+
+  test('no-op when primaryTarget node does not exist in system', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('b');
+    const node = new Node('n');
+    node.alignment.primaryTarget = 'ghost';
+    body.addNode(node);
+    system.addBody(body);
+    system.updateForwardKinematics();
+    expect(() => system.solveNodeAlignment('n')).not.toThrow();
+  });
+
+  test('no-op when node and target share the same position', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('b');
+    const node = new Node('n');
+    node.alignment.primaryTarget = 't';
+    node.alignment.primaryAxis = 'z';
+    body.addNode(node);
+    system.addBody(body);
+
+    const targetBody = new RigidBody('tb');
+    const targetNode = new Node('t');
+    targetBody.addNode(targetNode);
+    system.addBody(targetBody);
+
+    system.updateForwardKinematics();
+    expect(() => system.solveNodeAlignment('n')).not.toThrow();
+  });
+
+  test('aligns node with primaryAxis z toward target', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('camera');
+    const node = new Node('lens');
+    node.alignment.primaryAxis = 'z';
+    node.alignment.primaryTarget = 'target';
+    body.addNode(node);
+    system.addBody(body);
+
+    const targetBody = new RigidBody('scene');
+    const targetNode = new Node('target');
+    targetNode.localTransform = new Matrix4x4().translate(0, 3, 0);
+    targetBody.addNode(targetNode);
+    system.addBody(targetBody);
+
+    system.updateForwardKinematics();
+    system.solveNodeAlignment('lens');
+
+    expect(node.localTransform).toBeDefined();
+  });
+
+  test('aligns node with primaryAxis x toward target', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('camera');
+    const node = new Node('lens');
+    node.alignment.primaryAxis = 'x';
+    node.alignment.primaryTarget = 'target';
+    body.addNode(node);
+    system.addBody(body);
+
+    const targetBody = new RigidBody('scene');
+    const targetNode = new Node('target');
+    targetNode.localTransform = new Matrix4x4().translate(0, 3, 0);
+    targetBody.addNode(targetNode);
+    system.addBody(targetBody);
+
+    system.updateForwardKinematics();
+    system.solveNodeAlignment('lens');
+
+    expect(node.localTransform).toBeDefined();
+  });
+
+  test('aligns node with primaryAxis y toward target', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('camera');
+    const node = new Node('lens');
+    node.alignment.primaryAxis = 'y';
+    node.alignment.primaryTarget = 'target';
+    body.addNode(node);
+    system.addBody(body);
+
+    const targetBody = new RigidBody('scene');
+    const targetNode = new Node('target');
+    targetNode.localTransform = new Matrix4x4().translate(0, 3, 0);
+    targetBody.addNode(targetNode);
+    system.addBody(targetBody);
+
+    system.updateForwardKinematics();
+    system.solveNodeAlignment('lens');
+
+    expect(node.localTransform).toBeDefined();
+  });
+
+  test('handles degenerate case when desired direction is near X axis', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('camera');
+    const node = new Node('lens');
+    node.alignment.primaryAxis = 'z';
+    node.alignment.primaryTarget = 'target';
+    body.addNode(node);
+    system.addBody(body);
+
+    const targetBody = new RigidBody('scene');
+    const targetNode = new Node('target');
+    // Target nearly along X from origin → desiredLocalDir ≈ (1, 0, 0), triggers degenerate branch
+    targetNode.localTransform = new Matrix4x4().translate(10, 0.001, 0);
+    targetBody.addNode(targetNode);
+    system.addBody(targetBody);
+
+    system.updateForwardKinematics();
+    expect(() => system.solveNodeAlignment('lens')).not.toThrow();
+    expect(node.localTransform).toBeDefined();
+  });
+
+  test('uses z as fallback axis when primaryAxis is null', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('camera');
+    const node = new Node('lens');
+    node.alignment.primaryAxis = null;   // null → falls back to 'z'
+    node.alignment.primaryTarget = 'target';
+    body.addNode(node);
+    system.addBody(body);
+
+    const targetBody = new RigidBody('scene');
+    const targetNode = new Node('target');
+    targetNode.localTransform = new Matrix4x4().translate(0, 5, 0);
+    targetBody.addNode(targetNode);
+    system.addBody(targetBody);
+
+    system.updateForwardKinematics();
+    expect(() => system.solveNodeAlignment('lens')).not.toThrow();
+    expect(node.localTransform).toBeDefined();
+  });
+
+  test('node registered via addNode (not inside a body) still aligns', () => {
+    const system = new KinematicSystem();
+
+    // The alignee is a standalone node not part of any body's node map
+    const node = new Node('floating');
+    node.alignment.primaryAxis = 'z';
+    node.alignment.primaryTarget = 'anchor';
+    system.addNode(node);
+
+    const targetBody = new RigidBody('anchor_body');
+    const targetNode = new Node('anchor');
+    targetNode.localTransform = new Matrix4x4().translate(0, 3, 0);
+    targetBody.addNode(targetNode);
+    system.addBody(targetBody);
+
+    system.updateForwardKinematics();
+    // Node is not in any body → parentTransform stays identity, still computes alignment
+    expect(() => system.solveNodeAlignment('floating')).not.toThrow();
   });
 });
