@@ -85,6 +85,71 @@ describe('Joint', () => {
   });
 });
 
+describe('Vector3 additional methods', () => {
+  test('length()', () => {
+    expect(new Vector3(1, 0, 0).length()).toBe(1);
+    expect(new Vector3(0, 0, 0).length()).toBe(0);
+    expect(new Vector3(1, 1, 1).length()).toBeCloseTo(Math.sqrt(3));
+  });
+
+  test('normalize()', () => {
+    const v = new Vector3(2, 0, 0);
+    const normalized = v.normalize();
+    expect(normalized.length()).toBeCloseTo(1);
+    expect(normalized.x).toBeCloseTo(1);
+    expect(normalized.y).toBeCloseTo(0);
+    expect(normalized.z).toBeCloseTo(0);
+
+    const zero = new Vector3(0, 0, 0);
+    const normalizedZero = zero.normalize();
+    expect(normalizedZero.length()).toBe(0);
+    expect(normalizedZero.x).toBe(0);
+    expect(normalizedZero.y).toBe(0);
+    expect(normalizedZero.z).toBe(0);
+  });
+
+  test('add(), sub(), scale()', () => {
+    const v1 = new Vector3(1, 2, 3);
+    const v2 = new Vector3(4, 5, 6);
+
+    const added = v1.add(v2);
+    expect(added.x).toBe(5);
+    expect(added.y).toBe(7);
+    expect(added.z).toBe(9);
+
+    const subbed = v1.sub(v2);
+    expect(subbed.x).toBe(-3);
+    expect(subbed.y).toBe(-3);
+    expect(subbed.z).toBe(-3);
+
+    const scaled = v1.scale(2);
+    expect(scaled.x).toBe(2);
+    expect(scaled.y).toBe(4);
+    expect(scaled.z).toBe(6);
+  });
+
+  test('clone()', () => {
+    const v1 = new Vector3(1, 2, 3);
+    const v2 = v1.clone();
+    expect(v2.x).toBe(v1.x);
+    expect(v2.y).toBe(v1.y);
+    expect(v2.z).toBe(v1.z);
+
+    v2.x = 10;
+    expect(v1.x).toBe(1);
+    expect(v2.x).toBe(10);
+  });
+
+  test('static sub()', () => {
+    const v1 = new Vector3(10, 10, 10);
+    const v2 = new Vector3(1, 2, 3);
+    const result = Vector3.sub(v1, v2);
+    expect(result.x).toBe(9);
+    expect(result.y).toBe(8);
+    expect(result.z).toBe(7);
+  });
+});
+
 function buildTwoLinkArm(angleJ1: number, angleJ2: number): [number, number, number] {
   const system = new KinematicSystem();
 
