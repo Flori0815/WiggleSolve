@@ -14,4 +14,4 @@ class RigidBody:
 
     def update_nodes(self) -> None:
         for node in self.nodes.values():
-            node.absolute_transform = self.transform.clone().multiply(node.local_transform)
+            node.absolute_transform = self.transform.multiply(node.local_transform)

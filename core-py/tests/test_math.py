@@ -82,14 +82,14 @@ class TestMatrix4x4:
 
     def test_translation(self):
         m = Matrix4x4()
-        m.translate(10, 20, 30)
+        m = m.translate(10, 20, 30)
         x, y, z = m.get_translation()
         assert x == 10 and y == 20 and z == 30
 
     def test_rotate_z_90(self):
         m = Matrix4x4()
-        m.rotate_z(math.pi / 2)
-        m.translate(1, 0, 0)
+        m = m.rotate_z(math.pi / 2)
+        m = m.translate(1, 0, 0)
         x, y, z = m.get_translation()
         assert abs(x) < 1e-5
         assert abs(y - 1) < 1e-5
@@ -99,7 +99,7 @@ class TestMatrix4x4:
         a = Matrix4x4().translate(2, 3, 4)
         b = Matrix4x4().rotate_z(math.pi / 2)
 
-        ab = a.clone().multiply(b)
+        ab = a.multiply(b)
         abx, aby, abz = ab.get_translation()
         assert abs(abx - 2) < 1e-5
         assert abs(aby - 3) < 1e-5
@@ -108,7 +108,7 @@ class TestMatrix4x4:
         assert abs(x_col.x) < 1e-5
         assert abs(x_col.y - 1) < 1e-5
 
-        ba = b.clone().multiply(a)
+        ba = b.multiply(a)
         bax, bay, baz = ba.get_translation()
         assert abs(bax - (-3)) < 1e-5
         assert abs(bay - 2) < 1e-5
@@ -116,7 +116,7 @@ class TestMatrix4x4:
 
     def test_invert_identity(self):
         m = Matrix4x4()
-        m.invert()
+        m = m.invert()
         assert m.elements[0] == 1
         assert m.elements[5] == 1
         assert m.elements[10] == 1
@@ -124,7 +124,7 @@ class TestMatrix4x4:
 
     def test_invert_translation(self):
         m = Matrix4x4().translate(5, -3, 2)
-        m.invert()
+        m = m.invert()
         x, y, z = m.get_translation()
         assert abs(x - (-5)) < 1e-5
         assert abs(y - 3) < 1e-5

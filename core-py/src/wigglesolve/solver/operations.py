@@ -74,21 +74,21 @@ def apply_operation(system, operation: Operation) -> None:
         ax, ay, az = joint.axis
         if joint.type == "revolute":
             if ax == 1:
-                local_step_mat.rotate_x(actual_step)
+                local_step_mat = local_step_mat.rotate_x(actual_step)
             elif ay == 1:
-                local_step_mat.rotate_y(actual_step)
+                local_step_mat = local_step_mat.rotate_y(actual_step)
             else:
-                local_step_mat.rotate_z(actual_step)
+                local_step_mat = local_step_mat.rotate_z(actual_step)
         else:
-            local_step_mat.translate(ax * actual_step, ay * actual_step, az * actual_step)
+            local_step_mat = local_step_mat.translate(ax * actual_step, ay * actual_step, az * actual_step)
 
-        pivot_inv = pivot.absolute_transform.clone().invert()
-        delta_t = pivot.absolute_transform.clone().multiply(local_step_mat).multiply(pivot_inv)
+        pivot_inv = pivot.absolute_transform.invert()
+        delta_t = pivot.absolute_transform.multiply(local_step_mat).multiply(pivot_inv)
 
         for body_id in operation.moving_bodies:
             body = system.bodies.get(body_id)
             if body:
-                body.transform = delta_t.clone().multiply(body.transform)
+                body.transform = delta_t.multiply(body.transform)
                 body.update_nodes()
 
         return

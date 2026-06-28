@@ -100,19 +100,19 @@ class KinematicSystem:
         axis = joint.axis
         if joint.type == "revolute":
             if axis[0] == 1:
-                local_step_mat.rotate_x(delta_value)
+                local_step_mat = local_step_mat.rotate_x(delta_value)
             elif axis[1] == 1:
-                local_step_mat.rotate_y(delta_value)
+                local_step_mat = local_step_mat.rotate_y(delta_value)
             else:
-                local_step_mat.rotate_z(delta_value)
+                local_step_mat = local_step_mat.rotate_z(delta_value)
         else:
-            local_step_mat.translate(axis[0] * delta_value, axis[1] * delta_value, axis[2] * delta_value)
+            local_step_mat = local_step_mat.translate(axis[0] * delta_value, axis[1] * delta_value, axis[2] * delta_value)
 
-        pivot_inv = pivot.absolute_transform.clone().invert()
-        delta_t = pivot.absolute_transform.clone().multiply(local_step_mat).multiply(pivot_inv)
+        pivot_inv = pivot.absolute_transform.invert()
+        delta_t = pivot.absolute_transform.multiply(local_step_mat).multiply(pivot_inv)
 
         for body_id in moving_body_ids:
             body = self.bodies.get(body_id)
             if body:
-                body.transform = delta_t.clone().multiply(body.transform)
+                body.transform = delta_t.multiply(body.transform)
                 body.update_nodes()
