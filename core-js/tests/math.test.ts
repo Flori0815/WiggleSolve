@@ -69,7 +69,9 @@ describe('Math Primitives', () => {
     expect(bay).toBeCloseTo(2);
     expect(baz).toBeCloseTo(4);
   });
+});
 
+describe('Joint', () => {
   test('Joint fixed type returns identity', () => {
     const joint = new Joint('j-fixed', 'fixed');
     const identity = new Matrix4x4();
