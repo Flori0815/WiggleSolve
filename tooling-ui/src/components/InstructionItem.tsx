@@ -1,7 +1,9 @@
 import { Joint, KinematicSystem } from 'core-js/src/index';
-import type { Instruction } from 'core-js/src/index';
+import type { Instruction, Operation } from 'core-js/src/index';
 import { JointConfigEditor } from './JointConfigEditor';
 import type { UIJointConfig } from '../types';
+
+type OperationWithUIConfig = Operation & { config?: UIJointConfig };
 
 type Props = {
   instr: Instruction;
@@ -71,12 +73,14 @@ export const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies
   }
 
   const op = instr.operation;
+  const opWithConfig = op as OperationWithUIConfig;
   let joint = system.joints.get(op.jointId);
   if (!joint) { joint = new Joint(op.jointId); system.addJoint(joint); }
-  if (!(op as any).config) {
+  if (!opWithConfig.config) {
     const axisStr: 'x' | 'y' | 'z' = joint.axis[0] === 1 ? 'x' : (joint.axis[1] === 1 ? 'y' : 'z');
-    (op as any).config = { type: joint.type, axis: axisStr };
+    opWithConfig.config = { type: joint.type, axis: axisStr };
   }
+  const uiConfig = opWithConfig.config as UIJointConfig;
 
   return (
     <div className="sequence-item op">
@@ -86,12 +90,11 @@ export const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies
       </div>
       <div className="op-form">
         <JointConfigEditor
-          config={(op as any).config as UIJointConfig}
+          config={uiConfig}
           onChange={update => {
-            Object.assign((op as any).config, update);
-            const cfg = (op as any).config as UIJointConfig;
-            const coreAxis: [number, number, number] = cfg.axis === 'x' ? [1, 0, 0] : (cfg.axis === 'y' ? [0, 1, 0] : [0, 0, 1]);
-            joint!.type = cfg.type;
+            Object.assign(uiConfig, update);
+            const coreAxis: [number, number, number] = uiConfig.axis === 'x' ? [1, 0, 0] : (uiConfig.axis === 'y' ? [0, 1, 0] : [0, 0, 1]);
+            joint!.type = uiConfig.type;
             joint!.axis = coreAxis;
             onUpdate();
           }}

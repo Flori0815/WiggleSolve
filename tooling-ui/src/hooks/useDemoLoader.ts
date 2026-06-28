@@ -97,10 +97,10 @@ export function useDemoLoader({
     sequence.splice(0, sequence.length, ...validatedDef.sequence.map(raw => ({
       type: 'loop' as const,
       max_iterations: raw.max_iterations,
-      condition: raw.condition as any,
+      condition: raw.condition,
       steps: raw.steps.map(step => ({
         type: 'operation' as const,
-        operation: step.operation as any,
+        operation: step.operation,
       })),
     })));
 

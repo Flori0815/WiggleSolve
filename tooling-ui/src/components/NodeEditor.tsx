@@ -58,7 +58,7 @@ export const NodeEditor = ({
         <div className="alignment-section">
           <span className="tiny" style={{ color: '#c084fc', marginTop: '5px' }}>LookAt Align:</span>
           <div className="align-row">
-            <select value={node.alignment.primaryAxis || ''} onChange={e => { node.alignment.primaryAxis = e.target.value as any; onUpdate(); }}>
+            <select value={node.alignment.primaryAxis || ''} onChange={e => { const v = e.target.value as '' | 'x' | 'y' | 'z'; node.alignment.primaryAxis = v === '' ? null : v; onUpdate(); }}>
               <option value="">Axis...</option>
               <option value="x">X</option>
               <option value="y">Y</option>
