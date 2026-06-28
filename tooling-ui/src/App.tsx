@@ -11,6 +11,7 @@ import type { Instruction } from 'core-js/src/index';
 import { Visualizer } from './components/Visualizer';
 import { DEMOS } from './demos/index';
 import type { DemoDefinition, DemoActuatorDef } from './demos/index';
+import { DemoDefinitionSchema } from './schema';
 import './App.css';
 
 // --- Types ---
@@ -313,6 +314,15 @@ function App() {
   }]);
 
   const loadDemo = useCallback((def: DemoDefinition) => {
+    const result = DemoDefinitionSchema.safeParse(def);
+    if (!result.success) {
+      console.error('Invalid Demo Definition:', result.error.format());
+      alert(`Failed to load demo: ${result.error.issues[0].path.join('.')} - ${result.error.issues[0].message}`);
+      return;
+    }
+
+    const validatedDef = result.data;
+
     setAppMode('definition');
     setSolverStatus('idle');
     lastActuatorValues.current = {};
@@ -322,7 +332,7 @@ function App() {
     system.nodes.clear();
     system.joints.clear();
 
-    for (const bodyDef of def.system.bodies) {
+    for (const bodyDef of validatedDef.system.bodies) {
       const body = new RigidBody(bodyDef.id);
       for (const nodeDef of bodyDef.nodes) {
         const node = new Node(nodeDef.id);
@@ -332,33 +342,33 @@ function App() {
       system.addBody(body);
     }
 
-    for (const nodeDef of def.system.globalNodes ?? []) {
+    for (const nodeDef of validatedDef.system.globalNodes) {
       const node = new Node(nodeDef.id);
       node.absoluteTransform = matrixFromArray(nodeDef.absoluteTransform);
       system.addNode(node);
     }
 
-    for (const jointDef of def.system.joints) {
-      system.addJoint(new Joint(jointDef.id, jointDef.type, jointDef.axis, 0, jointDef.limits));
+    for (const jointDef of validatedDef.system.joints) {
+      system.addJoint(new Joint(jointDef.id, jointDef.type, jointDef.axis as [number, number, number], 0, jointDef.limits as [number, number]));
     }
 
-    assembleKinematicChain(system, def.actuators);
+    assembleKinematicChain(system, validatedDef.actuators);
     system.updateForwardKinematics();
 
     const newActuators: Record<string, UIActuator> = {};
-    for (const a of def.actuators) {
+    for (const a of validatedDef.actuators) {
       newActuators[a.id] = { id: a.id, type: a.type, axis: a.axis, pivotNode: a.pivotNode, movingBodies: [...a.movingBodies], value: 0 };
     }
     setActuators(newActuators);
 
-    sequence.splice(0, sequence.length, ...def.sequence.map(raw => {
+    sequence.splice(0, sequence.length, ...validatedDef.sequence.map(raw => {
       const instr: Instruction = {
         type: 'loop',
         max_iterations: raw.max_iterations,
-        condition: raw.condition,
+        condition: raw.condition as any,
         steps: raw.steps.map(step => ({
           type: 'operation' as const,
-          operation: { ...step.operation },
+          operation: step.operation as any,
         })),
       };
       return instr;
