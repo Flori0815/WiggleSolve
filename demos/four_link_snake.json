@@ -1,0 +1,69 @@
+{
+  "name": "4-Link Snake Arm",
+  "description": "Four equal-length revolute joints in a serial chain — demonstrates high-redundancy CCD IK where many joint configurations can satisfy the same target.",
+  "system": {
+    "bodies": [
+      {
+        "id": "base_body",
+        "nodes": [
+          { "id": "base_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "link1_body",
+        "nodes": [
+          { "id": "link1_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.0,0,0,1] }
+        ]
+      },
+      {
+        "id": "link2_body",
+        "nodes": [
+          { "id": "link2_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.0,0,0,1] }
+        ]
+      },
+      {
+        "id": "link3_body",
+        "nodes": [
+          { "id": "link3_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.0,0,0,1] }
+        ]
+      },
+      {
+        "id": "link4_body",
+        "nodes": [
+          { "id": "link4_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.5,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 2.0,1.5,0,1]
+      }
+    ],
+    "joints": [
+      { "id": "j1", "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j2", "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j3", "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j4", "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] }
+    ]
+  },
+  "actuators": [
+    { "id": "j1", "type": "revolute", "axis": "z", "pivotNode": "base_pivot", "movingBodies": ["link1_body", "link2_body", "link3_body", "link4_body"] },
+    { "id": "j2", "type": "revolute", "axis": "z", "pivotNode": "link1_end",  "movingBodies": ["link2_body", "link3_body", "link4_body"] },
+    { "id": "j3", "type": "revolute", "axis": "z", "pivotNode": "link2_end",  "movingBodies": ["link3_body", "link4_body"] },
+    { "id": "j4", "type": "revolute", "axis": "z", "pivotNode": "link3_end",  "movingBodies": ["link4_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 300,
+      "condition": { "type": "distance_less_than", "nodeA": "link4_end", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "link4_end", "targetNode": "target", "pivotNode": "link3_end",  "jointId": "j4", "movingBodies": ["link4_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "link4_end", "targetNode": "target", "pivotNode": "link2_end",  "jointId": "j3", "movingBodies": ["link3_body", "link4_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "link4_end", "targetNode": "target", "pivotNode": "link1_end",  "jointId": "j2", "movingBodies": ["link2_body", "link3_body", "link4_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "link4_end", "targetNode": "target", "pivotNode": "base_pivot", "jointId": "j1", "movingBodies": ["link1_body", "link2_body", "link3_body", "link4_body"] } }
+      ]
+    }
+  ]
+}

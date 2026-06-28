@@ -534,3 +534,40 @@ input[type="number"] {
   border-radius: 6px;
   margin: 0;
 }
+
+.demo-selector {
+  margin-bottom: 14px;
+}
+
+.demo-selector select {
+  width: 100%;
+  background: #08060d;
+  border: 1px solid #3e414d;
+  color: #f3f4f6;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b7280' d='M1 1l5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+
+.demo-selector select:hover {
+  border-color: #c084fc;
+}
+
+.demo-selector select:focus {
+  outline: none;
+  border-color: #c084fc;
+  box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.15);
+}
+
+.demo-description {
+  font-size: 0.72rem;
+  color: #6b7280;
+  font-style: italic;
+  margin: 6px 2px 0;
+  line-height: 1.4;
+}
