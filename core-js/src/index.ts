@@ -1,4 +1,5 @@
 export * from './system/KinematicSystem';
+export * from './system/utils';
 export * from './elements/Node';
 export * from './elements/RigidBody';
 export * from './elements/Joint';
