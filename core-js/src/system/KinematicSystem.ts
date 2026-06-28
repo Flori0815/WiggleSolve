@@ -3,6 +3,7 @@ import { Joint } from '../elements/Joint';
 import { RigidBody } from '../elements/RigidBody';
 import { Vector3 } from '../math/Vector3';
 import { Matrix4x4 } from '../math/Matrix4x4';
+import { applyJointDelta } from './utils';
 
 export class KinematicSystem {
   public bodies: Map<string, RigidBody> = new Map();
@@ -97,27 +98,12 @@ export class KinematicSystem {
   applyActuatorDelta(jointId: string, pivotNodeId: string, movingBodyIds: string[], deltaValue: number): void {
     const joint = this.joints.get(jointId);
     const pivot = this.nodes.get(pivotNodeId);
-    if (!joint || !pivot || Math.abs(deltaValue) < 1e-8) return;
+    if (!joint || !pivot) return;
 
-    let localStepMat = new Matrix4x4();
-    const axis = joint.axis;
-    if (joint.type === 'revolute') {
-        if (axis[0] === 1) localStepMat = localStepMat.rotateX(deltaValue);
-        else if (axis[1] === 1) localStepMat = localStepMat.rotateY(deltaValue);
-        else localStepMat = localStepMat.rotateZ(deltaValue);
-    } else {
-        localStepMat = localStepMat.translate(axis[0] * deltaValue, axis[1] * deltaValue, axis[2] * deltaValue);
-    }
+    const movingBodies = movingBodyIds
+      .map((id) => this.bodies.get(id))
+      .filter((body): body is RigidBody => body !== undefined);
 
-    const pivotInv = pivot.absoluteTransform.invert();
-    const deltaT = pivot.absoluteTransform.multiply(localStepMat).multiply(pivotInv);
-
-    for (const bodyId of movingBodyIds) {
-      const body = this.bodies.get(bodyId);
-      if (body) {
-        body.transform = deltaT.multiply(body.transform);
-        body.updateNodes();
-      }
-    }
+    applyJointDelta(joint, pivot, movingBodies, deltaValue);
   }
 }

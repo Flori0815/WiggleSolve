@@ -1,6 +1,7 @@
 import { KinematicSystem } from '../system/KinematicSystem';
 import { Vector3 } from '../math/Vector3';
-import { Matrix4x4 } from '../math/Matrix4x4';
+import { applyJointDelta } from '../system/utils';
+import { RigidBody } from '../elements/RigidBody';
 
 export interface Operation {
   type: 'align_node';
@@ -66,29 +67,11 @@ export function applyOperation(system: KinematicSystem, operation: Operation): v
 
     joint.value = newValue;
 
-    // Calculate Delta Transform Matrix at Pivot
-    // DeltaT = M_pivot * R_local_step * M_pivot_inv
-    let localStepMat = new Matrix4x4();
-    const [ax, ay, az] = joint.axis;
-    if (joint.type === 'revolute') {
-      if (ax === 1) localStepMat = localStepMat.rotateX(actualStep);
-      else if (ay === 1) localStepMat = localStepMat.rotateY(actualStep);
-      else localStepMat = localStepMat.rotateZ(actualStep);
-    } else {
-      localStepMat = localStepMat.translate(ax * actualStep, ay * actualStep, az * actualStep);
-    }
+    const movingBodies = operation.movingBodies
+      .map((id) => system.bodies.get(id))
+      .filter((body): body is RigidBody => body !== undefined);
 
-    const pivotInv = pivot.absoluteTransform.invert();
-    const deltaT = pivot.absoluteTransform.multiply(localStepMat).multiply(pivotInv);
-
-    // Apply DeltaT to all moving bodies
-    for (const bodyId of operation.movingBodies) {
-      const body = system.bodies.get(bodyId);
-      if (body) {
-        body.transform = deltaT.multiply(body.transform);
-        body.updateNodes();
-      }
-    }
+    applyJointDelta(joint, pivot, movingBodies, actualStep);
 
     return;
   }
