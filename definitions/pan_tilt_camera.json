@@ -25,7 +25,7 @@
     "globalNodes": [
       {
         "id": "target",
-        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.3,0.3,0.3,1]
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.3,0.3,0.4243,1]
       }
     ],
     "joints": [
