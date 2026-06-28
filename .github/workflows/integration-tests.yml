@@ -30,6 +30,12 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
       - name: Run JS integration tests
         run: npm run test -w wigglesolve-integration-js
 
