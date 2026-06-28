@@ -1,0 +1,51 @@
+{
+  "name": "Forklift Mast",
+  "description": "A vertical prismatic joint (Z-axis) raises the fork carriage up the mast; a horizontal prismatic joint (X-axis) then extends the forks into the pallet — the classic two-axis warehouse lift.",
+  "system": {
+    "bodies": [
+      {
+        "id": "chassis_body",
+        "nodes": [
+          { "id": "mast_base", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "carriage_body",
+        "nodes": [
+          { "id": "carriage_node", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "fork_body",
+        "nodes": [
+          { "id": "fork_tip", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.5,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.0,0,1.5,1]
+      }
+    ],
+    "joints": [
+      { "id": "lift_joint",  "type": "prismatic", "axis": [0,0,1], "limits": [0.0, 3.0] },
+      { "id": "reach_joint", "type": "prismatic", "axis": [1,0,0], "limits": [0.0, 0.8] }
+    ]
+  },
+  "actuators": [
+    { "id": "lift_joint",  "type": "prismatic", "axis": "z", "pivotNode": "mast_base",    "movingBodies": ["carriage_body", "fork_body"] },
+    { "id": "reach_joint", "type": "prismatic", "axis": "x", "pivotNode": "carriage_node", "movingBodies": ["fork_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 100,
+      "condition": { "type": "distance_less_than", "nodeA": "fork_tip", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "fork_tip", "targetNode": "target", "pivotNode": "carriage_node", "jointId": "reach_joint", "movingBodies": ["fork_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "fork_tip", "targetNode": "target", "pivotNode": "mast_base",    "jointId": "lift_joint",  "movingBodies": ["carriage_body", "fork_body"] } }
+      ]
+    }
+  ]
+}

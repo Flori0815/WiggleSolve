@@ -1,0 +1,51 @@
+{
+  "name": "Wind Turbine Yaw + Blade Pitch",
+  "description": "A yaw revolute joint (Z-axis) rotates the entire nacelle into the wind; a blade-pitch revolute joint (X-axis) then feathers individual blades to control power output — two independent axes on a utility-scale turbine.",
+  "system": {
+    "bodies": [
+      {
+        "id": "tower_body",
+        "nodes": [
+          { "id": "tower_top", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "nacelle_body",
+        "nodes": [
+          { "id": "hub_center", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "blade_body",
+        "nodes": [
+          { "id": "blade_tip", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 3.0,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 2.0,2.0,0.5,1]
+      }
+    ],
+    "joints": [
+      { "id": "yaw_joint",   "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "pitch_joint", "type": "revolute", "axis": [1,0,0], "limits": [-1.5708,  1.5708]  }
+    ]
+  },
+  "actuators": [
+    { "id": "yaw_joint",   "type": "revolute", "axis": "z", "pivotNode": "tower_top",  "movingBodies": ["nacelle_body", "blade_body"] },
+    { "id": "pitch_joint", "type": "revolute", "axis": "x", "pivotNode": "hub_center", "movingBodies": ["blade_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 200,
+      "condition": { "type": "distance_less_than", "nodeA": "blade_tip", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "blade_tip", "targetNode": "target", "pivotNode": "hub_center", "jointId": "pitch_joint", "movingBodies": ["blade_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "blade_tip", "targetNode": "target", "pivotNode": "tower_top",  "jointId": "yaw_joint",   "movingBodies": ["nacelle_body", "blade_body"] } }
+      ]
+    }
+  ]
+}

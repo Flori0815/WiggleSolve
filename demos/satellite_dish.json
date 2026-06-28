@@ -1,0 +1,51 @@
+{
+  "name": "Satellite Dish / Parabolic Antenna",
+  "description": "An azimuth revolute joint (Z-axis) rotates the dish toward a compass bearing; an elevation revolute joint (Y-axis) tilts it up to the correct altitude — together they point the feed horn at any satellite in the sky.",
+  "system": {
+    "bodies": [
+      {
+        "id": "pedestal_body",
+        "nodes": [
+          { "id": "az_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "az_body",
+        "nodes": [
+          { "id": "el_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "dish_body",
+        "nodes": [
+          { "id": "feed_horn", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.2,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.7,0.8,0.6,1]
+      }
+    ],
+    "joints": [
+      { "id": "j_az", "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j_el", "type": "revolute", "axis": [0,1,0], "limits": [-1.5708, 1.5708] }
+    ]
+  },
+  "actuators": [
+    { "id": "j_az", "type": "revolute", "axis": "z", "pivotNode": "az_pivot", "movingBodies": ["az_body", "dish_body"] },
+    { "id": "j_el", "type": "revolute", "axis": "y", "pivotNode": "el_pivot", "movingBodies": ["dish_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 200,
+      "condition": { "type": "distance_less_than", "nodeA": "feed_horn", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "feed_horn", "targetNode": "target", "pivotNode": "el_pivot", "jointId": "j_el", "movingBodies": ["dish_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "feed_horn", "targetNode": "target", "pivotNode": "az_pivot", "jointId": "j_az", "movingBodies": ["az_body", "dish_body"] } }
+      ]
+    }
+  ]
+}

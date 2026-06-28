@@ -60,6 +60,64 @@ describe('Integration: prismatic_slider', () => {
   });
 });
 
+describe('Integration: pan_tilt_camera', () => {
+  let result: SolveResult;
+
+  beforeAll(() => {
+    result = loadAndRun(path.join(DEFINITIONS_DIR, 'pan_tilt_camera.json'));
+  });
+
+  test('solver converges', () => {
+    expect(result.converged).toBe(true);
+  });
+
+  test('effector reaches target within threshold', () => {
+    const effector = result.nodePositions['lens_tip'];
+    const target = result.nodePositions['target'];
+    expect(dist(effector, target)).toBeLessThan(0.01);
+  });
+
+  test('joint values remain within defined limits', () => {
+    expect(result.jointValues['j_pan']).toBeGreaterThanOrEqual(-Math.PI);
+    expect(result.jointValues['j_pan']).toBeLessThanOrEqual(Math.PI);
+    expect(result.jointValues['j_tilt']).toBeGreaterThanOrEqual(-Math.PI / 2);
+    expect(result.jointValues['j_tilt']).toBeLessThanOrEqual(Math.PI / 2);
+  });
+});
+
+describe('Integration: xyz_cnc_machine', () => {
+  let result: SolveResult;
+
+  beforeAll(() => {
+    result = loadAndRun(path.join(DEFINITIONS_DIR, 'xyz_cnc_machine.json'));
+  });
+
+  test('solver converges', () => {
+    expect(result.converged).toBe(true);
+  });
+
+  test('effector reaches target within threshold', () => {
+    const effector = result.nodePositions['spindle_tip'];
+    const target = result.nodePositions['target'];
+    expect(dist(effector, target)).toBeLessThan(0.01);
+  });
+
+  test('joint values remain within defined limits', () => {
+    expect(result.jointValues['x_joint']).toBeGreaterThanOrEqual(0.0);
+    expect(result.jointValues['x_joint']).toBeLessThanOrEqual(3.0);
+    expect(result.jointValues['y_joint']).toBeGreaterThanOrEqual(0.0);
+    expect(result.jointValues['y_joint']).toBeLessThanOrEqual(3.0);
+    expect(result.jointValues['z_joint']).toBeGreaterThanOrEqual(-2.0);
+    expect(result.jointValues['z_joint']).toBeLessThanOrEqual(0.0);
+  });
+
+  test('joint values converge to target coordinates', () => {
+    expect(result.jointValues['x_joint']).toBeCloseTo(1.5, 1);
+    expect(result.jointValues['y_joint']).toBeCloseTo(1.2, 1);
+    expect(result.jointValues['z_joint']).toBeCloseTo(-0.8, 1);
+  });
+});
+
 describe('Parity: shared numerical bounds with core-py', () => {
   // Both implementations must satisfy the same bounds against the same definitions.
   // If both test suites (JS and Python) pass these assertions, they are in parity.

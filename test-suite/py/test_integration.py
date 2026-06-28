@@ -49,6 +49,46 @@ class TestPrismaticSlider:
         assert abs(self.result['joint_values']['slider_joint'] - 2.0) < 0.05
 
 
+class TestPanTiltCamera:
+    def setup_method(self):
+        self.result = load_and_run(DEFINITIONS_DIR / 'pan_tilt_camera.json')
+
+    def test_solver_converges(self):
+        assert self.result['converged'] is True
+
+    def test_effector_reaches_target(self):
+        effector = self.result['node_positions']['lens_tip']
+        target = self.result['node_positions']['target']
+        assert _dist(effector, target) < 0.01
+
+    def test_joint_values_within_limits(self):
+        assert -math.pi <= self.result['joint_values']['j_pan'] <= math.pi
+        assert -math.pi / 2 <= self.result['joint_values']['j_tilt'] <= math.pi / 2
+
+
+class TestXyzCncMachine:
+    def setup_method(self):
+        self.result = load_and_run(DEFINITIONS_DIR / 'xyz_cnc_machine.json')
+
+    def test_solver_converges(self):
+        assert self.result['converged'] is True
+
+    def test_effector_reaches_target(self):
+        effector = self.result['node_positions']['spindle_tip']
+        target = self.result['node_positions']['target']
+        assert _dist(effector, target) < 0.01
+
+    def test_joint_values_within_limits(self):
+        assert 0.0 <= self.result['joint_values']['x_joint'] <= 3.0
+        assert 0.0 <= self.result['joint_values']['y_joint'] <= 3.0
+        assert -2.0 <= self.result['joint_values']['z_joint'] <= 0.0
+
+    def test_joint_values_converge_to_target_coordinates(self):
+        assert abs(self.result['joint_values']['x_joint'] - 1.5) < 0.05
+        assert abs(self.result['joint_values']['y_joint'] - 1.2) < 0.05
+        assert abs(self.result['joint_values']['z_joint'] - (-0.8)) < 0.05
+
+
 class TestParity:
     """Verify behavioural parity with core-js by asserting identical numerical bounds.
 

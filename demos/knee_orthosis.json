@@ -1,0 +1,42 @@
+{
+  "name": "Knee Orthosis (Powered Exoskeleton)",
+  "description": "A single revolute joint (Z-axis) at the knee pivot controls flexion and extension of the shin segment — physiological limits of 0° (full extension) to 130° (deep flexion) are enforced as joint limits.",
+  "system": {
+    "bodies": [
+      {
+        "id": "thigh_cuff",
+        "nodes": [
+          { "id": "knee_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "shin_cuff",
+        "nodes": [
+          { "id": "shin_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.45,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.2,0.4,0,1]
+      }
+    ],
+    "joints": [
+      { "id": "knee_joint", "type": "revolute", "axis": [0,0,1], "limits": [0.0, 2.2689] }
+    ]
+  },
+  "actuators": [
+    { "id": "knee_joint", "type": "revolute", "axis": "z", "pivotNode": "knee_pivot", "movingBodies": ["shin_cuff"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 100,
+      "condition": { "type": "distance_less_than", "nodeA": "shin_end", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "shin_end", "targetNode": "target", "pivotNode": "knee_pivot", "jointId": "knee_joint", "movingBodies": ["shin_cuff"] } }
+      ]
+    }
+  ]
+}

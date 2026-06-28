@@ -1,0 +1,60 @@
+{
+  "name": "Car Seat Adjuster",
+  "description": "A fore-aft prismatic joint (X-axis) slides the seat to leg-length; a height prismatic joint (Z-axis) raises it for visibility; a backrest revolute joint (Y-axis) sets the recline angle — three independent comfort adjustments.",
+  "system": {
+    "bodies": [
+      {
+        "id": "rail_body",
+        "nodes": [
+          { "id": "rail_origin", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "slide_body",
+        "nodes": [
+          { "id": "slide_mount", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "cushion_body",
+        "nodes": [
+          { "id": "cushion_mount", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "backrest_body",
+        "nodes": [
+          { "id": "headrest", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0.8,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.15,0,0.78,1]
+      }
+    ],
+    "joints": [
+      { "id": "slide_joint",    "type": "prismatic", "axis": [1,0,0], "limits": [-0.15, 0.25] },
+      { "id": "height_joint",   "type": "prismatic", "axis": [0,0,1], "limits": [0.0,   0.08] },
+      { "id": "recline_joint",  "type": "revolute",  "axis": [0,1,0], "limits": [-1.20, 0.20] }
+    ]
+  },
+  "actuators": [
+    { "id": "slide_joint",   "type": "prismatic", "axis": "x", "pivotNode": "rail_origin",   "movingBodies": ["slide_body", "cushion_body", "backrest_body"] },
+    { "id": "height_joint",  "type": "prismatic", "axis": "z", "pivotNode": "slide_mount",   "movingBodies": ["cushion_body", "backrest_body"] },
+    { "id": "recline_joint", "type": "revolute",  "axis": "y", "pivotNode": "cushion_mount", "movingBodies": ["backrest_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 200,
+      "condition": { "type": "distance_less_than", "nodeA": "headrest", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "headrest", "targetNode": "target", "pivotNode": "cushion_mount", "jointId": "recline_joint", "movingBodies": ["backrest_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "headrest", "targetNode": "target", "pivotNode": "slide_mount",   "jointId": "height_joint",  "movingBodies": ["cushion_body", "backrest_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "headrest", "targetNode": "target", "pivotNode": "rail_origin",   "jointId": "slide_joint",   "movingBodies": ["slide_body", "cushion_body", "backrest_body"] } }
+      ]
+    }
+  ]
+}

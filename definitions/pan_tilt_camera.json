@@ -1,0 +1,51 @@
+{
+  "name": "Pan-Tilt Camera Mount",
+  "description": "A pan revolute joint (Z-axis azimuth) rotates the camera head; a tilt revolute joint (Y-axis elevation) then aims the lens — together they cover any 3D direction within reach.",
+  "system": {
+    "bodies": [
+      {
+        "id": "base_body",
+        "nodes": [
+          { "id": "pan_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "pan_body",
+        "nodes": [
+          { "id": "tilt_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "camera_body",
+        "nodes": [
+          { "id": "lens_tip", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.6,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.3,0.3,0.3,1]
+      }
+    ],
+    "joints": [
+      { "id": "j_pan",  "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j_tilt", "type": "revolute", "axis": [0,1,0], "limits": [-1.5708, 1.5708] }
+    ]
+  },
+  "actuators": [
+    { "id": "j_pan",  "type": "revolute", "axis": "z", "pivotNode": "pan_pivot",  "movingBodies": ["pan_body", "camera_body"] },
+    { "id": "j_tilt", "type": "revolute", "axis": "y", "pivotNode": "tilt_pivot", "movingBodies": ["camera_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 200,
+      "condition": { "type": "distance_less_than", "nodeA": "lens_tip", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "lens_tip", "targetNode": "target", "pivotNode": "tilt_pivot", "jointId": "j_tilt", "movingBodies": ["camera_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "lens_tip", "targetNode": "target", "pivotNode": "pan_pivot",  "jointId": "j_pan",  "movingBodies": ["pan_body", "camera_body"] } }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "name": "Hydraulic Tower Crane",
+  "description": "A slew revolute joint (Y-axis) rotates the boom to any compass bearing; an elevation revolute joint (Z-axis) raises the boom; a prismatic extension joint (X-axis) then telescopes the hook to the correct radius.",
+  "system": {
+    "bodies": [
+      {
+        "id": "mast_body",
+        "nodes": [
+          { "id": "slew_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "boom_body",
+        "nodes": [
+          { "id": "boom_tip", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 3.0,0,0,1] }
+        ]
+      },
+      {
+        "id": "hook_body",
+        "nodes": [
+          { "id": "hook_point", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 3.0,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.5,2.0,1.0,1]
+      }
+    ],
+    "joints": [
+      { "id": "j_slew",      "type": "revolute",  "axis": [0,1,0], "limits": [-3.14159, 3.14159] },
+      { "id": "j_elevation", "type": "revolute",  "axis": [0,0,1], "limits": [-1.0,     1.0]     },
+      { "id": "j_extend",    "type": "prismatic", "axis": [1,0,0], "limits": [0.0,      2.0]     }
+    ]
+  },
+  "actuators": [
+    { "id": "j_slew",      "type": "revolute",  "axis": "y", "pivotNode": "slew_pivot", "movingBodies": ["boom_body", "hook_body"] },
+    { "id": "j_elevation", "type": "revolute",  "axis": "z", "pivotNode": "slew_pivot", "movingBodies": ["boom_body", "hook_body"] },
+    { "id": "j_extend",    "type": "prismatic", "axis": "x", "pivotNode": "boom_tip",   "movingBodies": ["hook_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 300,
+      "condition": { "type": "distance_less_than", "nodeA": "hook_point", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "hook_point", "targetNode": "target", "pivotNode": "boom_tip",   "jointId": "j_extend",    "movingBodies": ["hook_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "hook_point", "targetNode": "target", "pivotNode": "slew_pivot", "jointId": "j_elevation", "movingBodies": ["boom_body", "hook_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "hook_point", "targetNode": "target", "pivotNode": "slew_pivot", "jointId": "j_slew",      "movingBodies": ["boom_body", "hook_body"] } }
+      ]
+    }
+  ]
+}

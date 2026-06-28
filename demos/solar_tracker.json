@@ -1,0 +1,51 @@
+{
+  "name": "Dual-Axis Solar Tracker",
+  "description": "An azimuth revolute joint (Z-axis) sweeps the panel east-to-west; an elevation revolute joint (X-axis) tilts it toward the sun's altitude — maximises irradiance throughout the day.",
+  "system": {
+    "bodies": [
+      {
+        "id": "post_body",
+        "nodes": [
+          { "id": "az_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "az_stage",
+        "nodes": [
+          { "id": "el_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "panel_body",
+        "nodes": [
+          { "id": "panel_normal_tip", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0.8,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.4,0.5,0.4,1]
+      }
+    ],
+    "joints": [
+      { "id": "j_az", "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j_el", "type": "revolute", "axis": [1,0,0], "limits": [-1.5708, 1.5708] }
+    ]
+  },
+  "actuators": [
+    { "id": "j_az", "type": "revolute", "axis": "z", "pivotNode": "az_pivot", "movingBodies": ["az_stage", "panel_body"] },
+    { "id": "j_el", "type": "revolute", "axis": "x", "pivotNode": "el_pivot", "movingBodies": ["panel_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 200,
+      "condition": { "type": "distance_less_than", "nodeA": "panel_normal_tip", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "panel_normal_tip", "targetNode": "target", "pivotNode": "el_pivot", "jointId": "j_el", "movingBodies": ["panel_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "panel_normal_tip", "targetNode": "target", "pivotNode": "az_pivot", "jointId": "j_az", "movingBodies": ["az_stage", "panel_body"] } }
+      ]
+    }
+  ]
+}
