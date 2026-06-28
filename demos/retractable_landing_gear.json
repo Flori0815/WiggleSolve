@@ -1,0 +1,42 @@
+{
+  "name": "Retractable Aircraft Landing Gear",
+  "description": "A single revolute joint (X-axis) rotates the gear leg from its stowed position (tucked along the fuselage) to the fully deployed position (extending straight down) — a rotation of 90 degrees at the wing attachment point.",
+  "system": {
+    "bodies": [
+      {
+        "id": "wing_body",
+        "nodes": [
+          { "id": "gear_hinge", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "gear_leg",
+        "nodes": [
+          { "id": "wheel_center", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,-1.2,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,-1.2,1]
+      }
+    ],
+    "joints": [
+      { "id": "deploy_joint", "type": "revolute", "axis": [1,0,0], "limits": [0.0, 1.5708] }
+    ]
+  },
+  "actuators": [
+    { "id": "deploy_joint", "type": "revolute", "axis": "x", "pivotNode": "gear_hinge", "movingBodies": ["gear_leg"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 100,
+      "condition": { "type": "distance_less_than", "nodeA": "wheel_center", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "wheel_center", "targetNode": "target", "pivotNode": "gear_hinge", "jointId": "deploy_joint", "movingBodies": ["gear_leg"] } }
+      ]
+    }
+  ]
+}

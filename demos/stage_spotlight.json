@@ -1,0 +1,51 @@
+{
+  "name": "Stage Spotlight (Moving Head Fixture)",
+  "description": "A pan revolute joint (Z-axis) sweeps the beam left and right across the stage; a tilt revolute joint (X-axis) dips it toward the performer — the standard two-axis moving-head lighting fixture.",
+  "system": {
+    "bodies": [
+      {
+        "id": "yoke_body",
+        "nodes": [
+          { "id": "pan_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "head_body",
+        "nodes": [
+          { "id": "tilt_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "beam_body",
+        "nodes": [
+          { "id": "beam_spot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 2.0,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.2,1.0,0.8,1]
+      }
+    ],
+    "joints": [
+      { "id": "j_pan",  "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j_tilt", "type": "revolute", "axis": [1,0,0], "limits": [-0.8,     0.8]     }
+    ]
+  },
+  "actuators": [
+    { "id": "j_pan",  "type": "revolute", "axis": "z", "pivotNode": "pan_pivot",  "movingBodies": ["head_body", "beam_body"] },
+    { "id": "j_tilt", "type": "revolute", "axis": "x", "pivotNode": "tilt_pivot", "movingBodies": ["beam_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 200,
+      "condition": { "type": "distance_less_than", "nodeA": "beam_spot", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "beam_spot", "targetNode": "target", "pivotNode": "tilt_pivot", "jointId": "j_tilt", "movingBodies": ["beam_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "beam_spot", "targetNode": "target", "pivotNode": "pan_pivot",  "jointId": "j_pan",  "movingBodies": ["head_body", "beam_body"] } }
+      ]
+    }
+  ]
+}

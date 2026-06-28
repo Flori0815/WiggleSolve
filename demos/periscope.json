@@ -1,0 +1,60 @@
+{
+  "name": "Submarine Periscope",
+  "description": "A prismatic joint (Z-axis) raises the tube from the hull; a pan revolute joint (Z-axis) then rotates the optics to the bearing of interest; a tilt revolute joint (Y-axis) depresses the line of sight for close targets.",
+  "system": {
+    "bodies": [
+      {
+        "id": "hull_body",
+        "nodes": [
+          { "id": "housing_base", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "tube_body",
+        "nodes": [
+          { "id": "scope_top", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "pan_body",
+        "nodes": [
+          { "id": "pan_mount", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "optics_body",
+        "nodes": [
+          { "id": "eye_point", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.4,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.3,0.2,1.8,1]
+      }
+    ],
+    "joints": [
+      { "id": "raise_joint", "type": "prismatic", "axis": [0,0,1], "limits": [0.0,      2.5]     },
+      { "id": "pan_joint",   "type": "revolute",  "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "tilt_joint",  "type": "revolute",  "axis": [0,1,0], "limits": [-0.5,     0.5]     }
+    ]
+  },
+  "actuators": [
+    { "id": "raise_joint", "type": "prismatic", "axis": "z", "pivotNode": "housing_base", "movingBodies": ["tube_body", "pan_body", "optics_body"] },
+    { "id": "pan_joint",   "type": "revolute",  "axis": "z", "pivotNode": "scope_top",    "movingBodies": ["pan_body", "optics_body"] },
+    { "id": "tilt_joint",  "type": "revolute",  "axis": "y", "pivotNode": "pan_mount",    "movingBodies": ["optics_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 300,
+      "condition": { "type": "distance_less_than", "nodeA": "eye_point", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "eye_point", "targetNode": "target", "pivotNode": "pan_mount",    "jointId": "tilt_joint",  "movingBodies": ["optics_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "eye_point", "targetNode": "target", "pivotNode": "scope_top",    "jointId": "pan_joint",   "movingBodies": ["pan_body", "optics_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "eye_point", "targetNode": "target", "pivotNode": "housing_base", "jointId": "raise_joint", "movingBodies": ["tube_body", "pan_body", "optics_body"] } }
+      ]
+    }
+  ]
+}

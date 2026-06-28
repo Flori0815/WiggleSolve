@@ -1,0 +1,51 @@
+{
+  "name": "Telescope Alt-Azimuth Mount",
+  "description": "An azimuth revolute joint (Z-axis) rotates the optical tube to any compass bearing; an altitude revolute joint (Y-axis) then elevates the tube above the horizon — together they track any object in the sky.",
+  "system": {
+    "bodies": [
+      {
+        "id": "base_body",
+        "nodes": [
+          { "id": "az_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "az_stage",
+        "nodes": [
+          { "id": "alt_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "tube_body",
+        "nodes": [
+          { "id": "focal_point", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.8,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.2,0.8,0.8,1]
+      }
+    ],
+    "joints": [
+      { "id": "j_az",  "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j_alt", "type": "revolute", "axis": [0,1,0], "limits": [0.0,      1.5708]  }
+    ]
+  },
+  "actuators": [
+    { "id": "j_az",  "type": "revolute", "axis": "z", "pivotNode": "az_pivot",  "movingBodies": ["az_stage", "tube_body"] },
+    { "id": "j_alt", "type": "revolute", "axis": "y", "pivotNode": "alt_pivot", "movingBodies": ["tube_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 200,
+      "condition": { "type": "distance_less_than", "nodeA": "focal_point", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "focal_point", "targetNode": "target", "pivotNode": "alt_pivot", "jointId": "j_alt", "movingBodies": ["tube_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "focal_point", "targetNode": "target", "pivotNode": "az_pivot",  "jointId": "j_az",  "movingBodies": ["az_stage", "tube_body"] } }
+      ]
+    }
+  ]
+}

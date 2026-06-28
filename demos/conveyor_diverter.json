@@ -1,0 +1,42 @@
+{
+  "name": "Conveyor Belt Diverter Gate",
+  "description": "A single revolute joint (Z-axis) swings a guide gate across the belt to deflect packages into the correct outfeed lane — the simplest possible single-actuator kinematic example in a logistics context.",
+  "system": {
+    "bodies": [
+      {
+        "id": "frame_body",
+        "nodes": [
+          { "id": "gate_hinge", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "gate_body",
+        "nodes": [
+          { "id": "gate_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.8,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.5,0.6,0,1]
+      }
+    ],
+    "joints": [
+      { "id": "gate_joint", "type": "revolute", "axis": [0,0,1], "limits": [0.0, 1.5708] }
+    ]
+  },
+  "actuators": [
+    { "id": "gate_joint", "type": "revolute", "axis": "z", "pivotNode": "gate_hinge", "movingBodies": ["gate_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 50,
+      "condition": { "type": "distance_less_than", "nodeA": "gate_end", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "gate_end", "targetNode": "target", "pivotNode": "gate_hinge", "jointId": "gate_joint", "movingBodies": ["gate_body"] } }
+      ]
+    }
+  ]
+}
