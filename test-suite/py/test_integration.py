@@ -6,6 +6,8 @@ import pytest
 from loader import load_and_run
 
 DEFINITIONS_DIR = Path(__file__).parent.parent.parent / 'definitions'
+DEMOS_DIR = Path(__file__).parent.parent.parent / 'demos'
+DEMO_FILES = sorted([f.name for f in DEMOS_DIR.glob('*.json')])
 
 
 def _dist(a, b):
@@ -113,3 +115,11 @@ class TestParity:
         result = load_and_run(DEFINITIONS_DIR / 'prismatic_slider.json')
         # Both implementations converge to ~2.0 for this definition
         assert abs(result['joint_values']['slider_joint'] - 2.0) < 0.05
+
+
+@pytest.mark.parametrize('filename', DEMO_FILES)
+def test_demo_smoke(filename):
+    """Smoke test: every demo JSON must load and run without throwing."""
+    result = load_and_run(DEMOS_DIR / filename)
+    # Demos may not converge (some are open-loop), but must not throw
+    assert isinstance(result['converged'], bool)
