@@ -232,4 +232,159 @@ describe('RigidBody Architecture & Manual Solving', () => {
     expect(jointDef.value).toBeGreaterThan(stepLow);
     expect(stepHigh).toBeGreaterThan(jointDef.value);
   });
+
+  test('Unreachable target returns false', () => {
+    const system = new KinematicSystem();
+
+    // Body A (Pivot)
+    const bodyA = new RigidBody('body_a');
+    const nodePivot = new Node('pivot');
+    bodyA.addNode(nodePivot);
+    system.addBody(bodyA);
+
+    // Body B (Arm)
+    const bodyB = new RigidBody('body_b');
+    const nodeEffector = new Node('effector');
+    nodeEffector.localTransform = new Matrix4x4().translate(1, 0, 0); // Length 1
+    bodyB.addNode(nodeEffector);
+    system.addBody(bodyB);
+
+    // Target (Out of reach)
+    const bodyTarget = new RigidBody('body_target');
+    const nodeTarget = new Node('target');
+    bodyTarget.transform = new Matrix4x4().translate(2, 0, 0); // Distance 2
+    bodyTarget.addNode(nodeTarget);
+    system.addBody(bodyTarget);
+
+    const joint = new Joint('j1', 'revolute', [0, 0, 1]);
+    system.addJoint(joint);
+
+    system.updateForwardKinematics();
+
+    const sequence: Instruction[] = [
+      {
+        type: 'loop',
+        max_iterations: 10,
+        condition: { type: 'distance_less_than', nodeA: 'effector', nodeB: 'target', threshold: 0.001 },
+        steps: [
+          {
+            type: 'operation',
+            operation: {
+              type: 'align_node',
+              effectorNode: 'effector',
+              targetNode: 'target',
+              pivotNode: 'pivot',
+              jointId: 'j1',
+              movingBodies: ['body_b']
+            }
+          }
+        ]
+      }
+    ];
+
+    const executor = new Executor(system);
+    const result = executor.execute(sequence);
+
+    expect(result).toBe(false);
+  });
+
+  test('Converges on the last iteration', () => {
+    const system = new KinematicSystem();
+
+    const bodyA = new RigidBody('body_a');
+    const nodePivot = new Node('pivot');
+    bodyA.addNode(nodePivot);
+    system.addBody(bodyA);
+
+    const bodyB = new RigidBody('body_b');
+    const nodeEffector = new Node('effector');
+    nodeEffector.localTransform = new Matrix4x4().translate(1, 0, 0);
+    bodyB.addNode(nodeEffector);
+    system.addBody(bodyB);
+
+    const bodyTarget = new RigidBody('body_target');
+    const nodeTarget = new Node('target');
+    // Target is at (0, 1, 0), so it needs a 90 degree rotation.
+    bodyTarget.transform = new Matrix4x4().translate(0, 1, 0);
+    bodyTarget.addNode(nodeTarget);
+    system.addBody(bodyTarget);
+
+    const joint = new Joint('j1', 'revolute', [0, 0, 1]);
+    system.addJoint(joint);
+
+    system.updateForwardKinematics();
+
+    const sequence: Instruction[] = [
+      {
+        type: 'loop',
+        max_iterations: 200, // More iterations
+        condition: { type: 'distance_less_than', nodeA: 'effector', nodeB: 'target', threshold: 0.001 },
+        steps: [
+          {
+            type: 'operation',
+            operation: {
+              type: 'align_node',
+              effectorNode: 'effector',
+              targetNode: 'target',
+              pivotNode: 'pivot',
+              jointId: 'j1',
+              movingBodies: ['body_b']
+            }
+          }
+        ]
+      }
+    ];
+
+    const executor = new Executor(system);
+    const result = executor.execute(sequence);
+
+    // This SHOULD be true if the system converged after the 1st step.
+    // CCD align_node for a single revolute joint should converge in 1 step for this setup.
+    const effectorPos = new Vector3(...system.nodes.get('effector')!.absoluteTransform.getTranslation());
+    const targetPos = new Vector3(...system.nodes.get('target')!.absoluteTransform.getTranslation());
+    expect(result).toBe(true);
+    expect(effectorPos.distanceTo(targetPos)).toBeLessThan(0.001);
+    expect(joint.value).toBeCloseTo(Math.PI / 2, 2);
+  });
+
+  test('Converges immediately if condition already met', () => {
+    const system = new KinematicSystem();
+
+    const bodyA = new RigidBody('body_a');
+    const nodePivot = new Node('pivot');
+    bodyA.addNode(nodePivot);
+    system.addBody(bodyA);
+
+    const bodyB = new RigidBody('body_b');
+    const nodeEffector = new Node('effector');
+    nodeEffector.localTransform = new Matrix4x4().translate(1, 0, 0);
+    bodyB.addNode(nodeEffector);
+    system.addBody(bodyB);
+
+    const bodyTarget = new RigidBody('body_target');
+    const nodeTarget = new Node('target');
+    // Target is already at (1, 0, 0)
+    bodyTarget.transform = new Matrix4x4().translate(1, 0, 0);
+    bodyTarget.addNode(nodeTarget);
+    system.addBody(bodyTarget);
+
+    const joint = new Joint('j1', 'revolute', [0, 0, 1]);
+    system.addJoint(joint);
+
+    system.updateForwardKinematics();
+
+    const sequence: Instruction[] = [
+      {
+        type: 'loop',
+        max_iterations: 0, // 0 iterations allowed
+        condition: { type: 'distance_less_than', nodeA: 'effector', nodeB: 'target', threshold: 0.001 },
+        steps: []
+      }
+    ];
+
+    const executor = new Executor(system);
+    const result = executor.execute(sequence);
+
+    expect(result).toBe(true);
+  });
 });
