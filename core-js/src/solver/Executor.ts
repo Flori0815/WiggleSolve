@@ -20,14 +20,16 @@ export class Executor {
         applyOperation(this.system, instruction.operation);
       } else if (instruction.type === 'loop') {
         let converged = false;
-        for (let i = 0; i < instruction.max_iterations; i++) {
+        for (let i = 0; i <= instruction.max_iterations; i++) {
           if (evaluateCondition(this.system, instruction.condition)) {
             converged = true;
             break;
           }
-          this.execute(instruction.steps);
+          if (i < instruction.max_iterations) {
+            this.execute(instruction.steps);
+          }
         }
-        if (!converged && !evaluateCondition(this.system, instruction.condition)) {
+        if (!converged) {
           return false; // Loop failed to converge
         }
       }
