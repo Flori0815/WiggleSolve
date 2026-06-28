@@ -1,6 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Node, RigidBody, KinematicSystem } from 'core-js/src/index';
-import { Matrix4x4 } from 'core-js/src/index';
 import { InlineIdInput } from './InlineIdInput';
 import { NodeEditor } from './NodeEditor';
 import type { InlineInputState } from '../types';

@@ -1,5 +1,4 @@
 import type { Node } from 'core-js/src/index';
-import { Matrix4x4 } from 'core-js/src/index';
 
 type Props = {
   node: Node;
