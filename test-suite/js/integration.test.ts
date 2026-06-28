@@ -141,4 +141,17 @@ describe('Parity: shared numerical bounds with core-py', () => {
     const result = loadAndRun(path.join(DEFINITIONS_DIR, 'prismatic_slider.json'));
     expect(Math.abs(result.jointValues['slider_joint'] - 2.0)).toBeLessThan(0.05);
   });
+
+  test('pan_tilt: effector within 0.05 of target', () => {
+    const result = loadAndRun(path.join(DEFINITIONS_DIR, 'pan_tilt_camera.json'));
+    const effector = result.nodePositions['lens_tip'];
+    expect(dist(effector, [0.3, 0.3, 0.4243])).toBeLessThan(0.05);
+  });
+
+  test('xyz_cnc: joint values match within 0.05', () => {
+    const result = loadAndRun(path.join(DEFINITIONS_DIR, 'xyz_cnc_machine.json'));
+    expect(Math.abs(result.jointValues['x_joint'] - 1.5)).toBeLessThan(0.05);
+    expect(Math.abs(result.jointValues['y_joint'] - 1.2)).toBeLessThan(0.05);
+    expect(Math.abs(result.jointValues['z_joint'] - (-0.8))).toBeLessThan(0.05);
+  });
 });

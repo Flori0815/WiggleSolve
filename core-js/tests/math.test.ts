@@ -4,6 +4,7 @@ import { KinematicSystem } from '../src/system/KinematicSystem';
 import { Node } from '../src/elements/Node';
 import { RigidBody } from '../src/elements/RigidBody';
 import { Joint } from '../src/elements/Joint';
+import { Link } from '../src/elements/Link';
 
 describe('Math Primitives', () => {
   test('Vector3 basic operations', () => {
@@ -245,5 +246,151 @@ describe('Forward Kinematics', () => {
     expect(x).toBeCloseTo(5 * Math.SQRT2);
     expect(y).toBeCloseTo(5 * Math.SQRT2 + 10);
     expect(z).toBeCloseTo(0);
+  });
+});
+
+describe('Matrix4x4 additional methods', () => {
+  test('transformVector handles w=0 with fallback to 1', () => {
+    const m = new Matrix4x4();
+    // Set te[15]=0 so that w = te[3]*0 + te[7]*0 + te[11]*0 + te[15]*1 = 0
+    // The (w || 1) fallback uses 1 to avoid division by zero
+    m.elements[15] = 0;
+    const v = m.transformVector(new Vector3(0, 0, 0));
+    expect(isFinite(v.x)).toBe(true);
+    expect(isFinite(v.y)).toBe(true);
+    expect(isFinite(v.z)).toBe(true);
+  });
+
+  test('setTranslation mutates translation components', () => {
+    const m = new Matrix4x4().rotateZ(Math.PI / 4);
+    m.setTranslation(7, 8, 9);
+    const [x, y, z] = m.getTranslation();
+    expect(x).toBe(7);
+    expect(y).toBe(8);
+    expect(z).toBe(9);
+  });
+
+  test('copy duplicates all elements', () => {
+    const src = new Matrix4x4().rotateX(Math.PI / 3).translate(1, 2, 3);
+    const dst = new Matrix4x4();
+    dst.copy(src);
+    for (let i = 0; i < 16; i++) {
+      expect(dst.elements[i]).toBeCloseTo(src.elements[i]);
+    }
+  });
+
+  test('Matrix4x4.fromTranslation static factory', () => {
+    const m = Matrix4x4.fromTranslation(5, 6, 7);
+    const [x, y, z] = m.getTranslation();
+    expect(x).toBe(5);
+    expect(y).toBe(6);
+    expect(z).toBe(7);
+    // Rotation part should be identity
+    expect(m.elements[0]).toBe(1);
+    expect(m.elements[5]).toBe(1);
+    expect(m.elements[10]).toBe(1);
+  });
+});
+
+describe('Joint constructor defaults', () => {
+  test('all parameters default correctly when only id is provided', () => {
+    const joint = new Joint('j-defaults-only');
+    expect(joint.type).toBe('revolute');
+    expect(joint.axis).toEqual([0, 0, 1]);
+    expect(joint.value).toBe(0);
+    expect(joint.limits[0]).toBe(-Infinity);
+    expect(joint.limits[1]).toBe(Infinity);
+  });
+});
+
+describe('Joint getTransformMatrix', () => {
+  test('revolute around X axis rotates Y toward Z at 90°', () => {
+    const joint = new Joint('j-rx', 'revolute', [1, 0, 0]);
+    joint.value = Math.PI / 2;
+    const m = joint.getTransformMatrix();
+    const v = m.rotateVector(new Vector3(0, 1, 0));
+    expect(v.y).toBeCloseTo(0);
+    expect(v.z).toBeCloseTo(1);
+  });
+
+  test('revolute around Y axis rotates X toward -Z at 90°', () => {
+    const joint = new Joint('j-ry', 'revolute', [0, 1, 0]);
+    joint.value = Math.PI / 2;
+    const m = joint.getTransformMatrix();
+    const v = m.rotateVector(new Vector3(1, 0, 0));
+    expect(v.x).toBeCloseTo(0);
+    expect(v.z).toBeCloseTo(-1);
+  });
+
+  test('revolute around Z axis (az=1) rotates X toward Y at 90°', () => {
+    const joint = new Joint('j-rz', 'revolute', [0, 0, 1]);
+    joint.value = Math.PI / 2;
+    const m = joint.getTransformMatrix();
+    const v = m.rotateVector(new Vector3(1, 0, 0));
+    expect(v.x).toBeCloseTo(0);
+    expect(v.y).toBeCloseTo(1);
+  });
+
+  test('revolute fallback axis (no dominant component) uses rotateZ', () => {
+    const joint = new Joint('j-rf', 'revolute', [0, 0, 0]);
+    joint.value = Math.PI / 2;
+    const m = joint.getTransformMatrix();
+    const v = m.rotateVector(new Vector3(1, 0, 0));
+    expect(v.x).toBeCloseTo(0);
+    expect(v.y).toBeCloseTo(1);
+  });
+
+  test('prismatic joint translates along axis', () => {
+    const joint = new Joint('j-p', 'prismatic', [1, 0, 0]);
+    joint.value = 3;
+    const m = joint.getTransformMatrix();
+    const [x, y, z] = m.getTranslation();
+    expect(x).toBeCloseTo(3);
+    expect(y).toBeCloseTo(0);
+    expect(z).toBeCloseTo(0);
+  });
+});
+
+describe('Vector3 default constructor', () => {
+  test('no-arg constructor defaults to zero', () => {
+    const v = new Vector3();
+    expect(v.x).toBe(0);
+    expect(v.y).toBe(0);
+    expect(v.z).toBe(0);
+  });
+
+  test('partial constructor (1 arg)', () => {
+    const v = new Vector3(5);
+    expect(v.x).toBe(5);
+    expect(v.y).toBe(0);
+    expect(v.z).toBe(0);
+  });
+
+  test('partial constructor (2 args)', () => {
+    const v = new Vector3(3, 4);
+    expect(v.x).toBe(3);
+    expect(v.y).toBe(4);
+    expect(v.z).toBe(0);
+  });
+});
+
+describe('Link', () => {
+  test('constructor without transform defaults to identity', () => {
+    const link = new Link('l1');
+    expect(link.id).toBe('l1');
+    const [x, y, z] = link.transform.getTranslation();
+    expect(x).toBe(0);
+    expect(y).toBe(0);
+    expect(z).toBe(0);
+    expect(link.transform.elements[0]).toBe(1);
+  });
+
+  test('constructor with explicit transform', () => {
+    const t = new Matrix4x4().translate(2, 3, 4);
+    const link = new Link('l2', t);
+    const [x, y, z] = link.transform.getTranslation();
+    expect(x).toBe(2);
+    expect(y).toBe(3);
+    expect(z).toBe(4);
   });
 });
