@@ -641,7 +641,7 @@ function App() {
           )}
         </div>
       </div>
-      <div className="main-view"><Visualizer system={system} version={version} /></div>
+      <div className="main-view"><Visualizer system={system} version={version} actuators={actuators} /></div>
     </div>
   );
 }
