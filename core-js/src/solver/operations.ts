@@ -68,24 +68,24 @@ export function applyOperation(system: KinematicSystem, operation: Operation): v
 
     // Calculate Delta Transform Matrix at Pivot
     // DeltaT = M_pivot * R_local_step * M_pivot_inv
-    const localStepMat = new Matrix4x4();
+    let localStepMat = new Matrix4x4();
     const [ax, ay, az] = joint.axis;
     if (joint.type === 'revolute') {
-      if (ax === 1) localStepMat.rotateX(actualStep);
-      else if (ay === 1) localStepMat.rotateY(actualStep);
-      else localStepMat.rotateZ(actualStep);
+      if (ax === 1) localStepMat = localStepMat.rotateX(actualStep);
+      else if (ay === 1) localStepMat = localStepMat.rotateY(actualStep);
+      else localStepMat = localStepMat.rotateZ(actualStep);
     } else {
-      localStepMat.translate(ax * actualStep, ay * actualStep, az * actualStep);
+      localStepMat = localStepMat.translate(ax * actualStep, ay * actualStep, az * actualStep);
     }
 
-    const pivotInv = pivot.absoluteTransform.clone().invert();
-    const deltaT = pivot.absoluteTransform.clone().multiply(localStepMat).multiply(pivotInv);
+    const pivotInv = pivot.absoluteTransform.invert();
+    const deltaT = pivot.absoluteTransform.multiply(localStepMat).multiply(pivotInv);
 
     // Apply DeltaT to all moving bodies
     for (const bodyId of operation.movingBodies) {
       const body = system.bodies.get(bodyId);
       if (body) {
-        body.transform = deltaT.clone().multiply(body.transform);
+        body.transform = deltaT.multiply(body.transform);
         body.updateNodes();
       }
     }

@@ -21,11 +21,11 @@ describe('Math Primitives', () => {
   });
 
   test('Matrix4x4 identity and translation', () => {
-    const m = new Matrix4x4();
+    let m = new Matrix4x4();
     expect(m.elements[0]).toBe(1);
     expect(m.elements[15]).toBe(1);
 
-    m.translate(10, 20, 30);
+    m = m.translate(10, 20, 30);
     const [x, y, z] = m.getTranslation();
     expect(x).toBe(10);
     expect(y).toBe(20);
@@ -33,12 +33,12 @@ describe('Math Primitives', () => {
   });
 
   test('Matrix4x4 rotation', () => {
-    const m = new Matrix4x4();
+    let m = new Matrix4x4();
     // Rotate 90 degrees (PI/2) around Z axis
-    m.rotateZ(Math.PI / 2);
+    m = m.rotateZ(Math.PI / 2);
 
     // Identity * RotZ(90) * translate(1, 0, 0)
-    m.translate(1, 0, 0);
+    m = m.translate(1, 0, 0);
 
     const [x, y, z] = m.getTranslation();
     expect(x).toBeCloseTo(0);
@@ -52,7 +52,7 @@ describe('Math Primitives', () => {
     const b = new Matrix4x4().rotateZ(Math.PI / 2);
 
     // a*b: rotation becomes RotZ(90°), translation stays (2, 3, 4)
-    const ab = a.clone().multiply(b);
+    const ab = a.multiply(b);
     const [abx, aby, abz] = ab.getTranslation();
     expect(abx).toBeCloseTo(2);
     expect(aby).toBeCloseTo(3);
@@ -63,7 +63,7 @@ describe('Math Primitives', () => {
     expect(xCol.y).toBeCloseTo(1);
 
     // b*a: same rotation, but translation is rotated by RotZ(90°): (2,3,4) → (-3, 2, 4)
-    const ba = b.clone().multiply(a);
+    const ba = b.multiply(a);
     const [bax, bay, baz] = ba.getTranslation();
     expect(bax).toBeCloseTo(-3);
     expect(bay).toBeCloseTo(2);

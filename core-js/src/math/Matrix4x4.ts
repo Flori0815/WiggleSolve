@@ -54,17 +54,19 @@ export class Matrix4x4 {
     te[11] = a41 * b13 + a42 * b23 + a43 * b33 + a44 * b43;
     te[15] = a41 * b14 + a42 * b24 + a43 * b34 + a44 * b44;
 
-    this.elements = te;
-    return this;
+    const result = new Matrix4x4();
+    result.elements = te;
+    return result;
   }
 
   translate(x: number, y: number, z: number): Matrix4x4 {
-    const te = this.elements;
+    const result = this.clone();
+    const te = result.elements;
     te[12] += te[0] * x + te[4] * y + te[8] * z;
     te[13] += te[1] * x + te[5] * y + te[9] * z;
     te[14] += te[2] * x + te[6] * y + te[10] * z;
     te[15] += te[3] * x + te[7] * y + te[11] * z;
-    return this;
+    return result;
   }
 
   rotateX(theta: number): Matrix4x4 {
@@ -165,7 +167,7 @@ export class Matrix4x4 {
 
     const det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
 
-    if (det === 0) return this.identity();
+    if (det === 0) return new Matrix4x4();
 
     const invDet = 1 / det;
 
@@ -190,8 +192,9 @@ export class Matrix4x4 {
     res[14] = (n14 * n22 * n31 - n12 * n24 * n31 - n14 * n21 * n32 + n11 * n24 * n32 + n12 * n21 * n34 - n11 * n22 * n34) * invDet;
     res[15] = (n12 * n23 * n31 - n13 * n22 * n31 + n13 * n21 * n32 - n11 * n23 * n32 - n12 * n21 * n33 + n11 * n22 * n33) * invDet;
 
-    this.elements = res;
-    return this;
+    const result = new Matrix4x4();
+    result.elements = res;
+    return result;
   }
 
   static fromTranslation(x: number, y: number, z: number): Matrix4x4 {

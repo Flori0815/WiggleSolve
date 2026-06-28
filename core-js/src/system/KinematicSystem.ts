@@ -59,7 +59,7 @@ export class KinematicSystem {
     const worldDir = targetPos.sub(myPos).normalize();
     if (worldDir.length() < 1e-6) return;
 
-    const parentInv = parentTransform.clone().invert();
+    const parentInv = parentTransform.invert();
     const desiredLocalDir = parentInv.rotateVector(worldDir).normalize();
 
     // Create basis
@@ -99,23 +99,23 @@ export class KinematicSystem {
     const pivot = this.nodes.get(pivotNodeId);
     if (!joint || !pivot || Math.abs(deltaValue) < 1e-8) return;
 
-    const localStepMat = new Matrix4x4();
+    let localStepMat = new Matrix4x4();
     const axis = joint.axis;
     if (joint.type === 'revolute') {
-        if (axis[0] === 1) localStepMat.rotateX(deltaValue);
-        else if (axis[1] === 1) localStepMat.rotateY(deltaValue);
-        else localStepMat.rotateZ(deltaValue);
+        if (axis[0] === 1) localStepMat = localStepMat.rotateX(deltaValue);
+        else if (axis[1] === 1) localStepMat = localStepMat.rotateY(deltaValue);
+        else localStepMat = localStepMat.rotateZ(deltaValue);
     } else {
-        localStepMat.translate(axis[0] * deltaValue, axis[1] * deltaValue, axis[2] * deltaValue);
+        localStepMat = localStepMat.translate(axis[0] * deltaValue, axis[1] * deltaValue, axis[2] * deltaValue);
     }
 
-    const pivotInv = pivot.absoluteTransform.clone().invert();
-    const deltaT = pivot.absoluteTransform.clone().multiply(localStepMat).multiply(pivotInv);
+    const pivotInv = pivot.absoluteTransform.invert();
+    const deltaT = pivot.absoluteTransform.multiply(localStepMat).multiply(pivotInv);
 
     for (const bodyId of movingBodyIds) {
       const body = this.bodies.get(bodyId);
       if (body) {
-        body.transform = deltaT.clone().multiply(body.transform);
+        body.transform = deltaT.multiply(body.transform);
         body.updateNodes();
       }
     }

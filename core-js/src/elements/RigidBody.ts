@@ -23,7 +23,7 @@ export class RigidBody {
    */
   updateNodes(): void {
     for (const node of this.nodes.values()) {
-      node.absoluteTransform = this.transform.clone().multiply(node.localTransform);
+      node.absoluteTransform = this.transform.multiply(node.localTransform);
     }
   }
 }
