@@ -167,7 +167,9 @@ export class Matrix4x4 {
 
     const det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
 
-    if (det === 0) return new Matrix4x4();
+    if (det === 0) {
+      throw new Error("Matrix4x4.invert(): matrix is singular and cannot be inverted.");
+    }
 
     const invDet = 1 / det;
 

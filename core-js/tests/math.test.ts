@@ -69,6 +69,45 @@ describe('Math Primitives', () => {
     expect(bay).toBeCloseTo(2);
     expect(baz).toBeCloseTo(4);
   });
+
+  test('Matrix4x4 transformVector', () => {
+    // Translation: T(10, 20, 30) applied to P(1, 2, 3) -> (11, 22, 33)
+    const m1 = new Matrix4x4().translate(10, 20, 30);
+    const v1 = new Vector3(1, 2, 3);
+    const res1 = m1.transformVector(v1);
+    expect(res1.x).toBe(11);
+    expect(res1.y).toBe(22);
+    expect(res1.z).toBe(33);
+
+    // Rotation: RotZ(90 deg) applied to (1, 0, 0) -> (0, 1, 0)
+    const m2 = new Matrix4x4().rotateZ(Math.PI / 2);
+    const v2 = new Vector3(1, 0, 0);
+    const res2 = m2.transformVector(v2);
+    expect(res2.x).toBeCloseTo(0);
+    expect(res2.y).toBeCloseTo(1);
+    expect(res2.z).toBeCloseTo(0);
+  });
+
+  test('Matrix4x4 invert', () => {
+    // Round-trip: M * M.invert() ≈ identity
+    const m = new Matrix4x4()
+      .rotateX(Math.PI / 4)
+      .rotateY(Math.PI / 4)
+      .translate(1, 2, 3);
+
+    const mInv = m.clone().invert();
+    const identity = m.clone().multiply(mInv);
+
+    for (let i = 0; i < 16; i++) {
+      const expected = (i % 5 === 0) ? 1 : 0;
+      expect(identity.elements[i]).toBeCloseTo(expected);
+    }
+
+    // Singular matrix: verify the method signals failure (null return or thrown error)
+    const singular = new Matrix4x4();
+    singular.elements.fill(0);
+    expect(() => singular.invert()).toThrow();
+  });
 });
 
 describe('Joint', () => {
