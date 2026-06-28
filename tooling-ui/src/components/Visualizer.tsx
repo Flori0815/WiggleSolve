@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Grid } from '@react-three/drei';
+import { OrbitControls, Grid, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { KinematicSystem } from 'core-js/src/index';
 
@@ -29,6 +29,23 @@ const KinematicRenderer: React.FC<{ system: KinematicSystem, version: number }> 
             }
           </mesh>
           <primitive object={new THREE.AxesHelper(0.15)} />
+          <Html occlude="blending" pointerEvents="none">
+            <div
+              style={{
+                fontSize: '12px',
+                fontWeight: 'bold',
+                color: '#fff',
+                background: 'rgba(0, 0, 0, 0.7)',
+                padding: '2px 6px',
+                borderRadius: '4px',
+                whiteSpace: 'nowrap',
+                transform: 'translate(-50%, -120%)',
+                fontFamily: 'monospace',
+              }}
+            >
+              {node.id}
+            </div>
+          </Html>
         </group>
       );
     });
