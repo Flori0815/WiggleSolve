@@ -108,6 +108,14 @@ export class Matrix4x4 {
     return [te[12], te[13], te[14]];
   }
 
+  setTranslation(x: number, y: number, z: number): Matrix4x4 {
+    const te = this.elements;
+    te[12] = x;
+    te[13] = y;
+    te[14] = z;
+    return this;
+  }
+
   transformVector(v: Vector3): Vector3 {
     const te = this.elements;
     const x = v.x, y = v.y, z = v.z;
