@@ -414,7 +414,7 @@ describe('evaluateCondition error paths', () => {
     bodyB.addNode(nodeB);
     system.addBody(bodyB);
     system.updateForwardKinematics();
-    expect(() => (evaluateCondition as any)(system, {
+    expect(() => (evaluateCondition as unknown as (...a: unknown[]) => unknown)(system, {
       type: 'unknown_type',
       nodeA: 'na',
       nodeB: 'nb',
@@ -438,7 +438,7 @@ describe('applyOperation error paths', () => {
 
   test('throws on unsupported operation type', () => {
     const system = new KinematicSystem();
-    expect(() => (applyOperation as any)(system, {
+    expect(() => (applyOperation as unknown as (...a: unknown[]) => unknown)(system, {
       type: 'unknown_op',
       effectorNode: 'a',
       targetNode: 'b',
