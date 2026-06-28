@@ -8,7 +8,8 @@ export default defineConfig(({ command }) => ({
   base: command === 'serve' ? '/' : '/WiggleSolve/',
   resolve: {
     alias: {
-      '@demos': resolve(__dirname, '../demos'),
+      '@demos':        resolve(__dirname, '../demos'),
+      '@definitions':  resolve(__dirname, '../definitions'),
     },
   },
   server: {
