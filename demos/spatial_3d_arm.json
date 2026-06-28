@@ -1,0 +1,60 @@
+{
+  "name": "Spatial 3D Arm",
+  "description": "An azimuth revolute joint (Y-axis) sweeps the arm horizontally; two elevation revolute joints (Z-axis) bend the shoulder and elbow — together they reach arbitrary 3D targets.",
+  "system": {
+    "bodies": [
+      {
+        "id": "base_body",
+        "nodes": [
+          { "id": "base_mount", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "shoulder_body",
+        "nodes": [
+          { "id": "shoulder_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.5,0,0,1] }
+        ]
+      },
+      {
+        "id": "elbow_body",
+        "nodes": [
+          { "id": "elbow_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.2,0,0,1] }
+        ]
+      },
+      {
+        "id": "wrist_body",
+        "nodes": [
+          { "id": "wrist_tip", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0.8,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.0,1.0,1.0,1]
+      }
+    ],
+    "joints": [
+      { "id": "j_az",    "type": "revolute", "axis": [0,1,0], "limits": [-3.14159, 3.14159] },
+      { "id": "j_sh",    "type": "revolute", "axis": [0,0,1], "limits": [-1.5708,  1.5708]  },
+      { "id": "j_elbow", "type": "revolute", "axis": [0,0,1], "limits": [-3.14159, 3.14159] }
+    ]
+  },
+  "actuators": [
+    { "id": "j_az",    "type": "revolute", "axis": "y", "pivotNode": "base_mount",   "movingBodies": ["shoulder_body", "elbow_body", "wrist_body"] },
+    { "id": "j_sh",    "type": "revolute", "axis": "z", "pivotNode": "shoulder_end", "movingBodies": ["elbow_body", "wrist_body"] },
+    { "id": "j_elbow", "type": "revolute", "axis": "z", "pivotNode": "elbow_end",    "movingBodies": ["wrist_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 300,
+      "condition": { "type": "distance_less_than", "nodeA": "wrist_tip", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "wrist_tip", "targetNode": "target", "pivotNode": "elbow_end",    "jointId": "j_elbow", "movingBodies": ["wrist_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "wrist_tip", "targetNode": "target", "pivotNode": "shoulder_end", "jointId": "j_sh",    "movingBodies": ["elbow_body", "wrist_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "wrist_tip", "targetNode": "target", "pivotNode": "base_mount",   "jointId": "j_az",    "movingBodies": ["shoulder_body", "elbow_body", "wrist_body"] } }
+      ]
+    }
+  ]
+}

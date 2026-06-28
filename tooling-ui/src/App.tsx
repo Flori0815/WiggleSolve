@@ -9,6 +9,8 @@ import {
 } from 'core-js/src/index';
 import type { Instruction } from 'core-js/src/index';
 import { Visualizer } from './components/Visualizer';
+import { DEMOS } from './demos/index';
+import type { DemoDefinition, DemoActuatorDef } from './demos/index';
 import './App.css';
 
 // --- Types ---
@@ -83,6 +85,47 @@ const InlineIdInput = ({
     </div>
   );
 };
+
+// --- Demo Loading Helpers ---
+
+function matrixFromArray(arr: number[]): Matrix4x4 {
+  const m = new Matrix4x4();
+  m.elements = new Float32Array(arr);
+  return m;
+}
+
+function assembleKinematicChain(system: KinematicSystem, actuators: DemoActuatorDef[]): void {
+  const allMovingBodyIds = new Set<string>(actuators.flatMap(a => a.movingBodies));
+  const positioned = new Set<string>(
+    [...system.bodies.keys()].filter(id => !allMovingBodyIds.has(id)),
+  );
+  for (const id of positioned) system.bodies.get(id)!.updateNodes();
+
+  let progress = true;
+  while (progress) {
+    progress = false;
+    for (const [bodyId, body] of system.bodies) {
+      if (positioned.has(bodyId)) continue;
+      let best: DemoActuatorDef | null = null;
+      for (const act of actuators) {
+        if (!act.movingBodies.includes(bodyId)) continue;
+        let pivotBodyPositioned = false;
+        for (const [bid, b] of system.bodies) {
+          if (b.nodes.has(act.pivotNode) && positioned.has(bid)) { pivotBodyPositioned = true; break; }
+        }
+        if (!pivotBodyPositioned) continue;
+        if (!best || act.movingBodies.length < best.movingBodies.length) best = act;
+      }
+      if (!best) continue;
+      const pivot = system.nodes.get(best.pivotNode)!;
+      const [px, py, pz] = pivot.absoluteTransform.getTranslation();
+      body.transform = new Matrix4x4().translate(px, py, pz);
+      body.updateNodes();
+      positioned.add(bodyId);
+      progress = true;
+    }
+  }
+}
 
 // --- Helper Functions ---
 
@@ -194,7 +237,11 @@ const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies, syste
   } else {
     const op = instr.operation;
     let joint = system.joints.get(op.jointId);
-    if (!joint) { joint = new Joint(op.jointId); system.addJoint(joint); (op as any).config = { type: 'revolute', axis: 'z' }; }
+    if (!joint) { joint = new Joint(op.jointId); system.addJoint(joint); }
+    if (!(op as any).config) {
+      const axisStr: 'x' | 'y' | 'z' = joint.axis[0] === 1 ? 'x' : (joint.axis[1] === 1 ? 'y' : 'z');
+      (op as any).config = { type: joint.type, axis: axisStr };
+    }
     return (
       <div className="sequence-item op">
         <div className="item-row"><span className="bold">ALIGN</span><button className="del-btn" aria-label="Delete align instruction" onClick={onDelete}>×</button></div>
@@ -237,6 +284,7 @@ function App() {
   const [bodyInput, setBodyInput] = useState<InlineInputState>({ isOpen: false, value: '', error: '' });
   const [bodyNodeInput, setBodyNodeInput] = useState<InlineInputState & { bodyId?: string }>({ isOpen: false, value: '', error: '', bodyId: undefined });
   const [actuatorInput, setActuatorInput] = useState<InlineInputState>({ isOpen: false, value: '', error: '' });
+  const [selectedDemo, setSelectedDemo] = useState<string>('');
   const definitionStateRef = useRef<ReturnType<typeof cloneSystemState> | null>(null);
   const lastActuatorValues = useRef<Record<string, number>>({});
 
@@ -263,6 +311,62 @@ function App() {
     condition: { type: 'distance_less_than', nodeA: 'arm_end', nodeB: 'target', threshold: 0.01 },
     steps: [{ type: 'operation', operation: { type: 'align_node', effectorNode: 'arm_end', targetNode: 'target', pivotNode: 'pivot', jointId: 'auto_j1', movingBodies: ['arm_body'] } }]
   }]);
+
+  const loadDemo = useCallback((def: DemoDefinition) => {
+    setAppMode('definition');
+    setSolverStatus('idle');
+    lastActuatorValues.current = {};
+    definitionStateRef.current = null;
+
+    system.bodies.clear();
+    system.nodes.clear();
+    system.joints.clear();
+
+    for (const bodyDef of def.system.bodies) {
+      const body = new RigidBody(bodyDef.id);
+      for (const nodeDef of bodyDef.nodes) {
+        const node = new Node(nodeDef.id);
+        node.localTransform = matrixFromArray(nodeDef.localTransform);
+        body.addNode(node);
+      }
+      system.addBody(body);
+    }
+
+    for (const nodeDef of def.system.globalNodes ?? []) {
+      const node = new Node(nodeDef.id);
+      node.absoluteTransform = matrixFromArray(nodeDef.absoluteTransform);
+      system.addNode(node);
+    }
+
+    for (const jointDef of def.system.joints) {
+      system.addJoint(new Joint(jointDef.id, jointDef.type, jointDef.axis, 0, jointDef.limits));
+    }
+
+    assembleKinematicChain(system, def.actuators);
+    system.updateForwardKinematics();
+
+    const newActuators: Record<string, UIActuator> = {};
+    for (const a of def.actuators) {
+      newActuators[a.id] = { id: a.id, type: a.type, axis: a.axis, pivotNode: a.pivotNode, movingBodies: [...a.movingBodies], value: 0 };
+    }
+    setActuators(newActuators);
+
+    sequence.splice(0, sequence.length, ...def.sequence.map(raw => {
+      const instr: Instruction = {
+        type: 'loop',
+        max_iterations: raw.max_iterations,
+        condition: raw.condition,
+        steps: raw.steps.map(step => ({
+          type: 'operation' as const,
+          operation: { ...step.operation },
+        })),
+      };
+      return instr;
+    }));
+
+    setCollapsedItems(new Set());
+    setVersion(v => v + 1);
+  }, [system, sequence]);
 
   const incrementVersion = useCallback(() => {
     if (appMode === 'definition') {
@@ -369,6 +473,29 @@ function App() {
       <div className="sidebar">
         <div className={`sidebar-header mode-${appMode}`}>
           <h1>WiggleSolve</h1>
+          <div className="demo-selector">
+            <select
+              value={selectedDemo}
+              onChange={e => {
+                const id = e.target.value;
+                setSelectedDemo(id);
+                if (id) {
+                  const entry = DEMOS.find(d => d.id === id);
+                  if (entry) loadDemo(entry.definition);
+                }
+              }}
+            >
+              <option value="">Load Demo…</option>
+              {DEMOS.map(d => (
+                <option key={d.id} value={d.id}>{d.definition.name}</option>
+              ))}
+            </select>
+            {selectedDemo && (
+              <p className="demo-description">
+                {DEMOS.find(d => d.id === selectedDemo)?.definition.description}
+              </p>
+            )}
+          </div>
           <div className={`mode-toggle mode-${appMode}`}>
             <button className={appMode === 'definition' ? 'active' : ''} onClick={() => appMode === 'solved' && toggleMode()}>Definition</button>
             <button className={appMode === 'solved' ? 'active' : ''} onClick={() => appMode === 'definition' && toggleMode()}>Solved</button>

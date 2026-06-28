@@ -1,0 +1,60 @@
+{
+  "name": "SCARA Robot",
+  "description": "Two horizontal revolute joints (shoulder + elbow) combined with a vertical prismatic joint — positions a tool tip anywhere in a 3D cylindrical workspace.",
+  "system": {
+    "bodies": [
+      {
+        "id": "base_body",
+        "nodes": [
+          { "id": "base_pivot", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      },
+      {
+        "id": "upper_arm_body",
+        "nodes": [
+          { "id": "shoulder_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.5,0,0,1] }
+        ]
+      },
+      {
+        "id": "forearm_body",
+        "nodes": [
+          { "id": "forearm_end", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.0,0,0,1] }
+        ]
+      },
+      {
+        "id": "tool_body",
+        "nodes": [
+          { "id": "tool_tip", "localTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1] }
+        ]
+      }
+    ],
+    "globalNodes": [
+      {
+        "id": "target",
+        "absoluteTransform": [1,0,0,0, 0,1,0,0, 0,0,1,0, 1.5,1.0,-0.5,1]
+      }
+    ],
+    "joints": [
+      { "id": "j1",  "type": "revolute",  "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j2",  "type": "revolute",  "axis": [0,0,1], "limits": [-3.14159, 3.14159] },
+      { "id": "j_z", "type": "prismatic", "axis": [0,0,1], "limits": [-1.0, 0.0] }
+    ]
+  },
+  "actuators": [
+    { "id": "j1",  "type": "revolute",  "axis": "z", "pivotNode": "base_pivot",  "movingBodies": ["upper_arm_body", "forearm_body", "tool_body"] },
+    { "id": "j2",  "type": "revolute",  "axis": "z", "pivotNode": "shoulder_end","movingBodies": ["forearm_body", "tool_body"] },
+    { "id": "j_z", "type": "prismatic", "axis": "z", "pivotNode": "forearm_end", "movingBodies": ["tool_body"] }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 200,
+      "condition": { "type": "distance_less_than", "nodeA": "tool_tip", "nodeB": "target", "threshold": 0.01 },
+      "steps": [
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "tool_tip", "targetNode": "target", "pivotNode": "base_pivot",   "jointId": "j1",  "movingBodies": ["upper_arm_body", "forearm_body", "tool_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "tool_tip", "targetNode": "target", "pivotNode": "shoulder_end", "jointId": "j2",  "movingBodies": ["forearm_body", "tool_body"] } },
+        { "type": "operation", "operation": { "type": "align_node", "effectorNode": "tool_tip", "targetNode": "target", "pivotNode": "forearm_end",  "jointId": "j_z", "movingBodies": ["tool_body"] } }
+      ]
+    }
+  ]
+}
