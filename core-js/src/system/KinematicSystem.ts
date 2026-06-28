@@ -60,6 +60,9 @@ export class KinematicSystem {
     if (worldDir.length() < 1e-6) return;
 
     const parentInv = parentTransform.clone().invert();
+    if (!parentInv) {
+      throw new Error("KinematicSystem.solveNodeAlignment: Failed to invert parent transform.");
+    }
     const desiredLocalDir = parentInv.rotateVector(worldDir).normalize();
 
     // Create basis
@@ -110,6 +113,9 @@ export class KinematicSystem {
     }
 
     const pivotInv = pivot.absoluteTransform.clone().invert();
+    if (!pivotInv) {
+      throw new Error("KinematicSystem.applyActuatorDelta: Failed to invert pivot transform.");
+    }
     const deltaT = pivot.absoluteTransform.clone().multiply(localStepMat).multiply(pivotInv);
 
     for (const bodyId of movingBodyIds) {

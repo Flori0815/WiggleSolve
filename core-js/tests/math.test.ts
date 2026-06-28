@@ -69,6 +69,15 @@ describe('Math Primitives', () => {
     expect(bay).toBeCloseTo(2);
     expect(baz).toBeCloseTo(4);
   });
+
+  test('Matrix4x4.invert() returns null on singular matrix', () => {
+    const m = new Matrix4x4();
+    // Zero matrix is singular
+    m.elements.fill(0);
+    const result = m.invert();
+
+    expect(result).toBeNull();
+  });
 });
 
 function buildTwoLinkArm(angleJ1: number, angleJ2: number): [number, number, number] {

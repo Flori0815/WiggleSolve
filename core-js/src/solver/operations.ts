@@ -78,6 +78,9 @@ export function applyOperation(system: KinematicSystem, operation: Operation): v
     }
 
     const pivotInv = pivot.absoluteTransform.clone().invert();
+    if (!pivotInv) {
+      throw new Error("applyOperation: Failed to invert pivot transform.");
+    }
     const deltaT = pivot.absoluteTransform.clone().multiply(localStepMat).multiply(pivotInv);
 
     // Apply DeltaT to all moving bodies

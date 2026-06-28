@@ -143,7 +143,7 @@ export class Matrix4x4 {
     return this;
   }
 
-  invert(): Matrix4x4 {
+  invert(): Matrix4x4 | null {
     const te = this.elements;
     const n11 = te[0], n21 = te[1], n31 = te[2], n41 = te[3];
     const n12 = te[4], n22 = te[5], n32 = te[6], n42 = te[7];
@@ -157,7 +157,7 @@ export class Matrix4x4 {
 
     const det = n11 * t11 + n21 * t12 + n31 * t13 + n41 * t14;
 
-    if (det === 0) return this.identity();
+    if (det === 0) return null;
 
     const invDet = 1 / det;
 
