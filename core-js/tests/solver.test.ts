@@ -854,6 +854,97 @@ describe('KinematicSystem.solveNodeAlignment', () => {
     expect(node.localTransform).toBeDefined();
   });
 
+  test('secondary axis aligns node roll so secondaryAxis points toward secondaryTarget', () => {
+    const system = new KinematicSystem();
+
+    // Node at origin: Z should point toward target1 (world Y), X should point toward target2 (world Z)
+    const body = new RigidBody('body');
+    const node = new Node('node');
+    node.alignment.primaryAxis = 'z';
+    node.alignment.primaryTarget = 'target1';
+    node.alignment.secondaryAxis = 'x';
+    node.alignment.secondaryTarget = 'target2';
+    body.addNode(node);
+    system.addBody(body);
+
+    const bt1 = new RigidBody('bt1');
+    const nt1 = new Node('target1');
+    nt1.localTransform = new Matrix4x4().translate(0, 1, 0);
+    bt1.addNode(nt1);
+    system.addBody(bt1);
+
+    const bt2 = new RigidBody('bt2');
+    const nt2 = new Node('target2');
+    nt2.localTransform = new Matrix4x4().translate(0, 0, 1);
+    bt2.addNode(nt2);
+    system.addBody(bt2);
+
+    system.updateForwardKinematics();
+    system.solveNodeAlignment('node');
+
+    const te = node.localTransform.elements;
+    // Column 2 = local Z in parent → must point toward target1 = world Y direction
+    expect(te[8]).toBeCloseTo(0);
+    expect(te[9]).toBeCloseTo(1);
+    expect(te[10]).toBeCloseTo(0);
+    // Column 0 = local X in parent → must point toward target2 = world Z direction (perp to primary)
+    expect(te[0]).toBeCloseTo(0);
+    expect(te[1]).toBeCloseTo(0);
+    expect(te[2]).toBeCloseTo(1);
+  });
+
+  test('secondary axis no-op when secondaryTarget node does not exist', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('body');
+    const node = new Node('node');
+    node.alignment.primaryAxis = 'z';
+    node.alignment.primaryTarget = 'target1';
+    node.alignment.secondaryAxis = 'x';
+    node.alignment.secondaryTarget = 'ghost';
+    body.addNode(node);
+    system.addBody(body);
+
+    const bt1 = new RigidBody('bt1');
+    const nt1 = new Node('target1');
+    nt1.localTransform = new Matrix4x4().translate(0, 1, 0);
+    bt1.addNode(nt1);
+    system.addBody(bt1);
+
+    system.updateForwardKinematics();
+    expect(() => system.solveNodeAlignment('node')).not.toThrow();
+    expect(node.localTransform).toBeDefined();
+  });
+
+  test('secondary axis no-op when secondary collinear with primary', () => {
+    const system = new KinematicSystem();
+    const body = new RigidBody('body');
+    const node = new Node('node');
+    node.alignment.primaryAxis = 'z';
+    node.alignment.primaryTarget = 'target1';
+    node.alignment.secondaryAxis = 'x';
+    node.alignment.secondaryTarget = 'target2';
+    body.addNode(node);
+    system.addBody(body);
+
+    const bt1 = new RigidBody('bt1');
+    const nt1 = new Node('target1');
+    nt1.localTransform = new Matrix4x4().translate(0, 1, 0);
+    bt1.addNode(nt1);
+    system.addBody(bt1);
+
+    // secondaryTarget is in the same direction as primaryTarget — projection is zero
+    const bt2 = new RigidBody('bt2');
+    const nt2 = new Node('target2');
+    nt2.localTransform = new Matrix4x4().translate(0, 2, 0);
+    bt2.addNode(nt2);
+    system.addBody(bt2);
+
+    system.updateForwardKinematics();
+    expect(() => system.solveNodeAlignment('node')).not.toThrow();
+    // Primary alignment should still be applied despite degenerate secondary
+    expect(node.localTransform).toBeDefined();
+  });
+
   test('node registered via addNode (not inside a body) still aligns', () => {
     const system = new KinematicSystem();
 

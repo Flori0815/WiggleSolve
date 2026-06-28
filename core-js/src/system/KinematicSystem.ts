@@ -70,7 +70,7 @@ export class KinematicSystem {
     const y = z.cross(x).normalize();
     x = y.cross(z).normalize();
 
-    const lookAtMat = new Matrix4x4();
+    let lookAtMat = new Matrix4x4();
     const te = lookAtMat.elements;
     const axis = node.alignment.primaryAxis || 'z';
 
@@ -86,6 +86,54 @@ export class KinematicSystem {
       te[0] = y.x; te[1] = y.y; te[2] = y.z;
       te[4] = z.x; te[5] = z.y; te[6] = z.z;
       te[8] = x.x; te[9] = x.y; te[10] = x.z;
+    }
+
+    // Apply a correction rotation around the primary axis to align the secondary axis.
+    const secAxis = node.alignment.secondaryAxis;
+    const secTargetId = node.alignment.secondaryTarget;
+    if (secAxis && secTargetId && secAxis !== axis) {
+      const secNode = this.nodes.get(secTargetId);
+      if (secNode) {
+        const secPos = new Vector3(...secNode.absoluteTransform.getTranslation());
+        const secWorldDir = secPos.sub(myPos);
+        if (secWorldDir.length() > 1e-6) {
+          const secLocalDir = parentInv.rotateVector(secWorldDir.normalize()).normalize();
+          // Project secondary direction perpendicular to the primary axis
+          const secProj = secLocalDir.sub(z.scale(secLocalDir.dot(z)));
+          if (secProj.length() > 1e-6) {
+            const secPerpNorm = secProj.normalize();
+            // Where does the secondary axis currently point after the primary lookAt?
+            const secAxisVec = secAxis === 'x' ? new Vector3(1, 0, 0)
+                             : secAxis === 'y' ? new Vector3(0, 1, 0)
+                             : new Vector3(0, 0, 1);
+            const curSecDir = lookAtMat.rotateVector(secAxisVec);
+            const curProj = curSecDir.sub(z.scale(curSecDir.dot(z)));
+            if (curProj.length() > 1e-6) {
+              const curPerpNorm = curProj.normalize();
+              // Signed angle from current secondary direction to desired, around the primary axis
+              const cosTheta = Math.max(-1, Math.min(1, curPerpNorm.dot(secPerpNorm)));
+              const sinTheta = curPerpNorm.cross(secPerpNorm).dot(z);
+              const theta = Math.atan2(sinTheta, cosTheta);
+              // Rodrigues rotation matrix around z (primary direction in parent space) by theta
+              const c = Math.cos(theta);
+              const s = Math.sin(theta);
+              const nx = z.x, ny = z.y, nz = z.z;
+              const R2 = new Matrix4x4();
+              const r2e = R2.elements;
+              r2e[0]  = c + (1 - c) * nx * nx;
+              r2e[1]  = (1 - c) * nx * ny + s * nz;
+              r2e[2]  = (1 - c) * nx * nz - s * ny;
+              r2e[4]  = (1 - c) * nx * ny - s * nz;
+              r2e[5]  = c + (1 - c) * ny * ny;
+              r2e[6]  = (1 - c) * ny * nz + s * nx;
+              r2e[8]  = (1 - c) * nx * nz + s * ny;
+              r2e[9]  = (1 - c) * ny * nz - s * nx;
+              r2e[10] = c + (1 - c) * nz * nz;
+              lookAtMat = R2.multiply(lookAtMat);
+            }
+          }
+        }
+      }
     }
 
     const localPos = node.localTransform.getTranslation();
