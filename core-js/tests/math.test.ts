@@ -95,8 +95,10 @@ describe('Vector3 additional methods', () => {
   test('normalize()', () => {
     const v = new Vector3(2, 0, 0);
     const normalized = v.normalize();
-    expect(normalized.length()).toBe(1);
-    expect(normalized.x).toBe(1);
+    expect(normalized.length()).toBeCloseTo(1);
+    expect(normalized.x).toBeCloseTo(1);
+    expect(normalized.y).toBeCloseTo(0);
+    expect(normalized.z).toBeCloseTo(0);
 
     const zero = new Vector3(0, 0, 0);
     const normalizedZero = zero.normalize();
