@@ -159,4 +159,77 @@ describe('RigidBody Architecture & Manual Solving', () => {
     expect(system.joints.size).toBe(2);
     expect(system.bodies.size).toBe(4); // body_a, body_b, body_c, body_target
   });
+
+  test('Damping factor affects convergence speed', () => {
+    const createSystem = () => {
+      const system = new KinematicSystem();
+      const bodyA = new RigidBody('body_a');
+      const nodePivot = new Node('pivot');
+      bodyA.addNode(nodePivot);
+      system.addBody(bodyA);
+
+      const bodyB = new RigidBody('body_b');
+      const nodeEffector = new Node('effector');
+      nodeEffector.localTransform = new Matrix4x4().translate(1, 0, 0);
+      bodyB.addNode(nodeEffector);
+      system.addBody(bodyB);
+
+      const bodyTarget = new RigidBody('body_target');
+      const nodeTarget = new Node('target');
+      bodyTarget.transform = new Matrix4x4().translate(0, 1, 0);
+      bodyTarget.addNode(nodeTarget);
+      system.addBody(bodyTarget);
+
+      const joint = new Joint('j1', 'revolute', [0, 0, 1]);
+      system.addJoint(joint);
+      system.updateForwardKinematics();
+      return { system, joint };
+    };
+
+    const runWithDamping = (damping: number) => {
+      const { system, joint } = createSystem();
+      const sequence: Instruction[] = [
+        {
+          type: 'operation',
+          operation: {
+            type: 'align_node',
+            effectorNode: 'effector',
+            targetNode: 'target',
+            pivotNode: 'pivot',
+            jointId: 'j1',
+            movingBodies: ['body_b'],
+            damping
+          }
+        }
+      ];
+      const executor = new Executor(system);
+      executor.execute(sequence);
+      return joint.value;
+    };
+
+    const stepLow = runWithDamping(0.1);
+    const stepHigh = runWithDamping(0.9);
+
+    // With higher damping, the joint should move further in a single step
+    // (Target is at 90 degrees, starting from 0, so it's a positive move)
+    expect(stepHigh).toBeGreaterThan(stepLow);
+
+    // Default should be between them (0.5)
+    const { system: systemDef, joint: jointDef } = createSystem();
+    new Executor(systemDef).execute([{
+      type: 'operation',
+      operation: {
+        type: 'align_node',
+        effectorNode: 'effector',
+        targetNode: 'target',
+        pivotNode: 'pivot',
+        jointId: 'j1',
+        movingBodies: ['body_b']
+        // damping omitted, should default to 0.5
+      }
+    }]);
+
+    expect(jointDef.value).toBeGreaterThan(stepLow);
+    expect(stepHigh).toBeGreaterThan(jointDef.value);
+  });
 });
