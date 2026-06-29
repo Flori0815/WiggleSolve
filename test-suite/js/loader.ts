@@ -7,6 +7,7 @@ import { Matrix4x4 } from '../../core-js/src/math/Matrix4x4';
 import { Executor, Instruction } from '../../core-js/src/solver/Executor';
 import type { Operation } from '../../core-js/src/solver/operations';
 import type { Condition } from '../../core-js/src/solver/conditions';
+import { assembleKinematicChain } from '../../core-js/src/system/assembly';
 
 export interface SolveResult {
   converged: boolean;
@@ -20,64 +21,6 @@ function matrixFromArray(arr: number[]): Matrix4x4 {
   return m;
 }
 
-/**
- * Positions moving bodies along the kinematic chain defined by the actuators.
- *
- * Without this step every body starts at the world origin, which causes revolute
- * joints to degenerate when the effector node coincides with the pivot node.
- * Each body's origin is placed at its most-specific parent actuator's pivot
- * position so the arm is in a fully-extended, non-degenerate start pose.
- */
-function assembleKinematicChain(system: KinematicSystem, actuators: any[]): void {
-  const allMovingBodyIds = new Set<string>(
-    actuators.flatMap((a: any) => a.movingBodies as string[]),
-  );
-
-  // Root bodies (not moved by any actuator) are already at identity; compute their nodes.
-  const positioned = new Set<string>(
-    [...system.bodies.keys()].filter(id => !allMovingBodyIds.has(id)),
-  );
-  for (const id of positioned) {
-    system.bodies.get(id)!.updateNodes();
-  }
-
-  let progress = true;
-  while (progress) {
-    progress = false;
-    for (const [bodyId, body] of system.bodies) {
-      if (positioned.has(bodyId)) continue;
-
-      // Find the most specific actuator whose pivot is in a positioned body.
-      // "Most specific" = smallest movingBodies array (direct parent in chain).
-      let best: any = null;
-      for (const act of actuators) {
-        if (!(act.movingBodies as string[]).includes(bodyId)) continue;
-
-        let pivotBodyPositioned = false;
-        for (const [bid, b] of system.bodies) {
-          if (b.nodes.has(act.pivotNode) && positioned.has(bid)) {
-            pivotBodyPositioned = true;
-            break;
-          }
-        }
-        if (!pivotBodyPositioned) continue;
-
-        if (!best || (act.movingBodies as string[]).length < best.movingBodies.length) {
-          best = act;
-        }
-      }
-
-      if (!best) continue;
-
-      const pivot = system.nodes.get(best.pivotNode)!;
-      const [px, py, pz] = pivot.absoluteTransform.getTranslation();
-      body.transform = new Matrix4x4().translate(px, py, pz);
-      body.updateNodes();
-      positioned.add(bodyId);
-      progress = true;
-    }
-  }
-}
 
 function parseInstruction(raw: Record<string, unknown>): Instruction {
   if (raw['type'] === 'operation') {

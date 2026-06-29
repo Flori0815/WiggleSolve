@@ -571,3 +571,104 @@ input[type="number"] {
   margin: 6px 2px 0;
   line-height: 1.4;
 }
+
+/* ── Live Session panel ──────────────────────────────────────────────────── */
+
+.live-session-panel {
+  margin-bottom: 10px;
+  padding: 8px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid #2a2d38;
+  border-radius: 6px;
+}
+
+.live-session-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.live-session-dot {
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.live-session-title {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.live-session-connect {
+  display: flex;
+  gap: 6px;
+}
+
+.live-session-url {
+  flex: 1;
+  background: #08060d;
+  border: 1px solid #3e414d;
+  color: #f3f4f6;
+  padding: 5px 8px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  font-family: monospace;
+}
+
+.live-session-url:focus {
+  outline: none;
+  border-color: #c084fc;
+}
+
+.live-session-btn {
+  background: #1e1b4b;
+  border: 1px solid #4338ca;
+  color: #a5b4fc;
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.live-session-btn:hover {
+  background: #2d2780;
+}
+
+.live-session-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.live-session-btn--disconnect {
+  background: transparent;
+  border-color: #6b7280;
+  color: #9ca3af;
+  font-size: 0.72rem;
+  padding: 3px 8px;
+}
+
+.live-session-btn--disconnect:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: transparent;
+}
+
+.live-session-active {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.live-session-name {
+  font-size: 0.78rem;
+  color: #22c55e;
+  font-style: italic;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

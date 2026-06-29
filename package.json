@@ -4,7 +4,8 @@
   "workspaces": [
     "core-js",
     "tooling-ui",
-    "test-suite/js"
+    "test-suite/js",
+    "mcp-server"
   ],
   "scripts": {
     "test:integration": "npm run test -w wigglesolve-integration-js",
