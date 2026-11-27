@@ -1,8 +1,9 @@
 import type { Matrix4x4 } from '../math/Matrix4x4';
 import type { Instruction } from '../solver/Executor';
 import { copyCondition } from '../solver/conditions';
+import { copyOperation } from '../solver/operations';
 import type { KinematicSystem } from '../system/KinematicSystem';
-import { DefinitionError } from './build';
+import { copyActuator, DefinitionError } from './build';
 import type { ActuatorDef, LoopDef, MechanismDefinition } from './schema';
 
 const UNBOUNDED = 1e6;
@@ -24,7 +25,7 @@ function serializeSequence(sequence: Instruction[]): LoopDef[] {
         if (step.type !== 'operation') {
           throw new DefinitionError([`[sequence.${i}.steps.${j}] nested loops are not serialisable`]);
         }
-        return { type: 'operation', operation: { ...step.operation, movingBodies: [...step.operation.movingBodies] } };
+        return { type: 'operation', operation: copyOperation(step.operation) };
       }),
     };
   });
@@ -69,7 +70,7 @@ export function serializeDefinition(
     name: meta.name,
     description: meta.description,
     system: { bodies, globalNodes, joints },
-    actuators: actuators.map(a => ({ ...a, movingBodies: [...a.movingBodies] })),
+    actuators: actuators.map(copyActuator),
     sequence: serializeSequence(sequence),
   };
 }

@@ -35,7 +35,7 @@ export const ActuatorsEditor = ({ mechanism, onChange }: Props) => {
             key={a.id}
             accent="actuator"
             title={a.id}
-            subtitle={incomplete ? 'incomplete' : `${a.type === 'revolute' ? 'rotates' : 'slides'} ${a.axis.toUpperCase()} · ${formatValue(a.type, lo)} … ${formatValue(a.type, hi)}`}
+            subtitle={incomplete ? 'incomplete' : `${a.type === 'revolute' ? 'rotates' : 'slides'} ${a.axis.toUpperCase()} · ${formatValue(a.type, lo)} … ${formatValue(a.type, hi)}${a.outputs?.length ? ` · +${a.outputs.length} output${a.outputs.length > 1 ? 's' : ''}` : ''}`}
             collapsed={isCollapsed(a.id)}
             onToggle={() => toggle(a.id)}
             onDelete={() => { mechanism.removeActuator(a.id); onChange(); }}
@@ -49,6 +49,11 @@ export const ActuatorsEditor = ({ mechanism, onChange }: Props) => {
               onChange={v => { a.pivotNode = v; onChange(); }} />
             <ChipSelect label="Moves bodies" options={bodyIds} selected={a.movingBodies}
               onChange={ids => { a.movingBodies = ids; onChange(); }} />
+            {a.outputs?.map((o, k) => (
+              <p key={k} className="field-hint">
+                Also drives {o.movingBodies.join(', ')} about {o.pivotNode}{o.ratio !== undefined && o.ratio !== 1 ? ` (ratio ${o.ratio})` : ''}
+              </p>
+            ))}
             <div className="row">
               <NumberField label="Min" unit={unitOf(a.type)} decimals={a.type === 'revolute' ? 1 : 3} step={a.type === 'revolute' ? 1 : 0.01}
                 value={toDisplay(a.type, lo)}

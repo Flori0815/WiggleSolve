@@ -94,9 +94,11 @@ describe('buildSystem', () => {
     const def = parseDefinition(readDemo('three_link_arm.json'));
     const seq = buildSequence(def.sequence);
     const first = seq[0];
-    if (first.type !== 'loop' || first.steps[0].type !== 'operation') throw new Error('unexpected shape');
-    first.steps[0].operation.movingBodies.push('x');
-    expect(def.sequence[0].steps[0].operation.movingBodies).not.toContain('x');
+    const step = first.type === 'loop' ? first.steps[0] : first;
+    const original = def.sequence[0].steps[0].operation;
+    if (step.type !== 'operation' || step.operation.type !== 'align_node' || original.type !== 'align_node') throw new Error('unexpected shape');
+    step.operation.movingBodies.push('x');
+    expect(original.movingBodies).not.toContain('x');
   });
 });
 

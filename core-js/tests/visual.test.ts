@@ -1,7 +1,7 @@
 import { RigidBody } from '../src/elements/RigidBody';
 import { Matrix4x4 } from '../src/math/Matrix4x4';
 import { buildSystem, parseDefinition, serializeDefinition, safeParseDefinition } from '../src/definition';
-import { beamMesh, boxMesh, meshFromWorldTriangles, prismMesh } from '../src/visual/mesh';
+import { beamMesh, boxMesh, loftMesh, meshFromWorldTriangles, prismMesh } from '../src/visual/mesh';
 import type { MeshVisual } from '../src/visual/mesh';
 
 const points = (m: MeshVisual) => Array.from({ length: m.vertices.length / 3 }, (_, i) => m.vertices.slice(i * 3, i * 3 + 3));
@@ -13,6 +13,14 @@ describe('mesh helpers', () => {
     expect(m.indices).toHaveLength((2 * 1 + 2 * 3) * 3);
     expect(m.color).toBe('#fff');
     expect(Math.max(...m.indices)).toBe(5);
+  });
+
+  test('loftMesh skins two different sections and rejects mismatched ones', () => {
+    const m = loftMesh([[0, 0, 0], [2, 0, 0], [0, 1, 0]], [[1, 0, 3], [2, 0, 3], [1, 0.5, 3]]);
+    expect(points(m)).toContainEqual([2, 0, 3]);
+    expect(m.indices).toHaveLength(24);
+    expect(() => loftMesh([[0, 0, 0], [1, 0, 0]], [[0, 0, 1], [1, 0, 1]])).toThrow('same number');
+    expect(() => loftMesh([[0, 0, 0], [1, 0, 0], [0, 1, 0]], [[0, 0, 1]])).toThrow('same number');
   });
 
   test('boxMesh spans min to max', () => {

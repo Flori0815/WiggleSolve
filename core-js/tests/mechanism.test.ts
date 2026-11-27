@@ -138,3 +138,23 @@ describe('Mechanism', () => {
     expect(() => m.setActuatorLimits('ghost', [0, 1])).toThrow('Unknown actuator');
   });
 });
+
+describe('actuator outputs', () => {
+  test('one actuator drives every output about its own pivot', () => {
+    const m = Mechanism.fromDefinition(demo('three_link_arm.json'));
+    m.sequence = [];
+    m.actuators = [{
+      id: 'shaft', type: 'revolute', axis: 'z', pivotNode: 'base_pivot', movingBodies: ['link1_body'],
+      outputs: [{ pivotNode: 'link2_end', movingBodies: ['link3_body'], ratio: 2 }, { pivotNode: 'ghost', movingBodies: ['link3_body'] }],
+    }];
+    const tip = () => m.system.nodes.get('link3_end')!.absoluteTransform.getTranslation();
+    const before = tip();
+    m.setActuatorValue('shaft', 0.1);
+    // link3 rotated by 0.2 about link2_end; link2_end itself did not move.
+    const [x, y] = tip();
+    expect(Math.atan2(y - before[1], x - before[0] + 0.8)).toBeCloseTo(0.2 / 2 + Math.PI / 2 - Math.PI / 2 + 0.1, 1);
+    expect(Math.hypot(x - 2.7, y)).toBeCloseTo(0.8, 5);
+    const copy = Mechanism.fromDefinition(JSON.parse(JSON.stringify(m.toDefinition())));
+    expect(copy.actuators[0].outputs).toHaveLength(2);
+  });
+});

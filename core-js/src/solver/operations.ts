@@ -3,7 +3,11 @@ import { Vector3 } from '../math/Vector3';
 import { applyJointDelta } from '../system/utils';
 import { RigidBody } from '../elements/RigidBody';
 
-export interface Operation {
+import { applyCloseLoops } from './closeLoops';
+import type { CloseLoopsOperation } from './closeLoops';
+
+/** Moves one joint so that `effectorNode` approaches `targetNode` (one CCD step). */
+export interface AlignNodeOperation {
   type: 'align_node';
   effectorNode: string;
   targetNode: string;
@@ -13,7 +17,28 @@ export interface Operation {
   damping?: number;
 }
 
+export type Operation = AlignNodeOperation | CloseLoopsOperation;
+
+/** Ids of the joints an operation moves. */
+export function operationJointIds(operation: Operation): string[] {
+  return operation.type === 'align_node' ? [operation.jointId] : operation.joints.map(j => j.jointId);
+}
+
+/** Deep copy of an operation. */
+export function copyOperation<O extends Operation>(operation: O): O {
+  if (operation.type === 'align_node') return { ...operation, movingBodies: [...operation.movingBodies] };
+  return {
+    ...operation,
+    joints: operation.joints.map(j => ({ ...j, movingBodies: [...j.movingBodies] })),
+    pairs: operation.pairs.map(([a, b]) => [a, b]),
+  };
+}
+
 export function applyOperation(system: KinematicSystem, operation: Operation): void {
+  if (operation.type === 'close_loops') {
+    applyCloseLoops(system, operation);
+    return;
+  }
   if (operation.type === 'align_node') {
     const effector = system.nodes.get(operation.effectorNode);
     const target = system.nodes.get(operation.targetNode);
@@ -76,5 +101,5 @@ export function applyOperation(system: KinematicSystem, operation: Operation): v
     return;
   }
 
-  throw new Error(`Unsupported operation type: ${(operation as Operation).type}`);
+  throw new Error(`Unsupported operation type: ${(operation as { type: string }).type}`);
 }

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import List, Literal, Optional
 from wigglesolve.math.vector3 import Vector3
 from wigglesolve.system.kinematic_system import apply_joint_delta
+from wigglesolve.solver.close_loops import apply_close_loops
 
 
 @dataclass
@@ -17,7 +18,10 @@ class Operation:
     damping: Optional[float] = None
 
 
-def apply_operation(system, operation: Operation) -> None:
+def apply_operation(system, operation) -> None:
+    if operation.type == "close_loops":
+        apply_close_loops(system, operation)
+        return
     if operation.type == "align_node":
         effector = system.nodes.get(operation.effector_node)
         target = system.nodes.get(operation.target_node)

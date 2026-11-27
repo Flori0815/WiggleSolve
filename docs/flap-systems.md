@@ -9,25 +9,33 @@ kinematically required bodies and nodes; the geometry is attached as
 
 ## Dropped-hinge flap
 
-`droppedHingeFlap(params?)` — demo: *Aerospace → Dropped-Hinge Flap*
-(`demos/dropped_hinge_flap.json`, regenerated with
+`droppedHingeFlap(params?)` — demo: *Aerospace → Dropped-Hinge Flap (swept,
+tapered)* (`demos/dropped_hinge_flap.json`, regenerated with
 `npm run generate:demos -w @wigglesolve/core`).
 
-Coordinates: **x** chordwise aft, **y** up, **z** spanwise outboard (hinge axis).
+### Geometry
+
+World axes: **x** aft, **y** up, **z** outboard. The hinge line is swept by
+`hingeSweep` (default 25°). Sections are defined in the plane normal to the
+hinge line and scaled linearly about the hinge point by the taper ratio
+(`taper`, default 0.6 tip/root). The flap trailing edge is therefore swept as
+well — with taper about the hinge line it is swept less than the hinge line
+(≈ 18.5° with the defaults), as on a swept wing.
 
 ```
  support 1 (spanwise fixed)                support 2 (spanwise free)
 
- wing ──◉ GRA                               wing ──◉ GRA
-        │ crank                                    │ crank
-        ●━━━━━━ strut ━━━━━● lug                   ●━━━━━━ strut ━━━━━● lug
-                     flap 1 │                                flap 2 │
-                     lever  │ (part of flap 1)          swivel ⊙    │ (flap-fixed axis, x)
-                            ◎ spherical hinge            lever  │
-                                                                ◎ spherical hinge
+ wing ──◉ GRA ═══════ torque shaft ═════════ wing ──◉ GRA (+ rigging offset)
+        │ crank                                     │ crank
+        ●━━━━ strut ━━━━● lug                       ●━━━━ strut ━━━━● lug
+                 flap 1 │                                   flap 2 │
+                 lever  │ (part of flap 1)          swivel ⊙       │ (flap-fixed axis)
+                        ◎ spherical hinge            lever  │
+                                                            ◎ spherical hinge
 
- flap 1 ════════════════════╪════════════════════ flap 2
-                    split: revolute about the hinge axis (1 DOF)
+ flap 1 ═══════════════════ ⊕ ═══════════════════ flap 2
+          split: revolute parallel to the hinge line, inside the
+          flap section at 1/3 chord (1 DOF)
 ```
 
 ### Topology
@@ -35,64 +43,73 @@ Coordinates: **x** chordwise aft, **y** up, **z** spanwise outboard (hinge axis)
 | Body | Nodes | Role |
 |---|---|---|
 | `wing` | `hinge_1`, `hinge_2`, `gra_1_axis`, `gra_2_axis` | ground: spherical-joint centres and actuator axes |
-| `crank_i` | `crank_i_tip` | actuator output crank, moved by actuator `gra_i` |
+| `crank_i` | `crank_i_tip` | rotary actuator output crank |
 | `strut_i` | `strut_i_top`, `strut_i_end` | drive strut with rod ends |
 | `flap_1` | `flap_1_lug`, `flap_split` | inboard panel incl. its hinge lever; carries the split axis |
 | `flap_2` | `flap_2_lug`, `lever_2_pivot` | outboard panel |
 | `lever_2` | `lever_2_end` | swivelling hinge lever of the spanwise-free support |
 
-| Joint | Type | Meaning |
-|---|---|---|
-| `hinge_1_x/y/z` | 3 × revolute at `hinge_1` | spherical joint lever ↔ wing at the fixed support; `hinge_1_z` is the flap deflection |
-| `flap_split_rot` | revolute about the hinge axis | the only relative freedom between the panels |
-| `lever_2_swivel` | revolute about a flap-fixed chordwise axis | lets support 2 follow spanwise motion |
-| `strut_i_rot`, `strut_i_tilt` | revolute | strut swing in the support plane and rod-end tilt |
-| `gra_i` | actuator | rotary actuator travel |
+| Joint / actuator | Meaning |
+|---|---|
+| `flap_drive` | power drive unit: turns both rotary actuators through the torque shaft (actuator with two outputs) |
+| `gra_2_rigging` | rigging / backlash offset of the outboard actuator (±2°) |
+| `hinge_1_x/y/z` | spherical joint lever ↔ wing at the fixed support (three revolutes about wing-fixed axes) |
+| `flap_split_rot` | the only relative freedom between the panels |
+| `lever_2_swivel` | lets support 2 follow spanwise motion |
+| `strut_i_rot`, `strut_i_tilt` | strut swing and rod-end tilt |
 
 The spherical joint at the free support (`lever_2_end` ↔ `hinge_2`) is a
-closure condition of the solving loop.
+closure of the solving loop. The values of `hinge_1_x/y/z` are accumulated
+rotations about fixed axes, not Euler angles, so their limits only bound
+plausibility; the deflection is best read geometrically.
 
 ### Determinacy
 
 Two panels and one lever have 18 DOF. The split revolute removes 5, the fixed
 spherical joint 3, the swivel revolute 5, the free spherical joint 3 and the
-two struts 1 each — leaving **0**: the two actuators position the flap
-completely. Neither is over-constrained: unequal actuator positions (rigging,
-tolerances, a failed drive) twist the panels against each other only at the
-split, and spanwise wing strain is taken by the swivel lever.
+two struts 1 each — leaving **0**. The two actuators therefore never fight:
 
-### Solving sequence
+- equal actuator positions rotate both panels about the hinge line, the split
+  stays at 0°;
+- a rigging difference twists the panels against each other at the split and
+  tilts the flap slightly about the fixed spherical joint — because the split
+  axis lies in the flap section, away from the hinge line;
+- spanwise wing strain at support 2 is taken by the lever swivel;
+- an asymmetry beyond `splitRange` (±15°) jams; the solver reports
+  `flap_split_rot` at its limit.
 
-One loop that runs until all three closures hold
-(`all_distances_less_than`: strut 1 ↔ lug 1, strut 2 ↔ lug 2,
-lever 2 ↔ hinge 2):
+### Solving
 
-1. strut 1 onto lug 1 (swing, tilt) → whole flap about `hinge_1_z`
-2. strut 2 onto lug 2 (swing, tilt) → flap 2 + lever about the split axis
-3. lever onto hinge 2: swivel → whole flap about `hinge_1_x`, `hinge_1_y`
+Because the split axis is offset from the hinge line, the three closures
+(strut 1 ↔ lug 1, strut 2 ↔ lug 2, lever 2 ↔ hinge 2) are strongly coupled.
+They are closed together by one `close_loops` step per iteration
+(Levenberg-Marquardt over all nine joints); typically 3–5 iterations,
+a few milliseconds.
 
 ### Parameters
 
 | Parameter | Default | Meaning |
 |---|---|---|
-| `span`, `splitStation` | `[0, 3]`, `1.5` | flap extent and panel split |
+| `span`, `splitStation` | `[0, 3]`, `1.5` | extent and split, along the hinge line |
+| `splitChordFraction` | `1/3` | split axis position in the section |
+| `hingeSweep`, `taper` | `25°`, `0.6` | hinge-line sweep, tip/root chord ratio |
 | `supports` | `0.75` fixed, `2.25` free | one support per panel, exactly one fixed |
-| `hinge` | `(0.60, −0.30)` | spherical-joint centre (dropped hinge) |
-| `lug` | `(0.55, −0.15)` | strut attachment on the flap |
-| `leverPivot` | `(0.60, −0.09)` | swivel point of the free lever on the flap |
-| `profile` | 6-point section | flap section for the mesh |
-| `actuatorAxis`, `crankLength`, `crankAngle` | `(0.15, −0.05)`, `0.15`, `0` | actuator and crank |
-| `driveRange` | `0° … 60°` | actuator travel |
-| `flapRange`, `splitRange`, `swivelRange`, `sphericalRange`, `strutTilt` | `−70…10°`, `±15°`, `±15°`, `±5°`, `±10°` | joint limits |
-| `tolerance`, `damping` | `1e-5`, `0.8` | loop convergence |
+| `hinge`, `lug`, `leverPivot` | `(0.60, −0.30)`, `(0.55, −0.15)`, `(0.60, −0.09)` | root section points |
+| `profile` | 6-point section | flap section (index 0 = leading edge) |
+| `actuatorAxis`, `crankLength`, `crankAngle` | `(0.15, −0.05)`, `0.15`, `0` | actuator and crank (root section) |
+| `driveRange`, `riggingRange` | `0…60°`, `±2°` | torque-shaft travel, rigging offset |
+| `flapRange`, `splitRange`, `swivelRange`, `sphericalRange`, `strutTilt` | `−70…10°`, `±15°`, `±15°`, `±30°`, `±10°` | joint limits |
+| `tolerance`, `damping` | `1e-5`, `1e-3` | convergence tolerance, Levenberg-Marquardt λ |
 
-With the defaults, 60° of actuator travel deflects the flap by about 49°;
-the four-bar transmission angle stays above 64° (no toggle).
+With the defaults, 60° of drive deflects the flap by about 49°; the four-bar
+transmission angle stays above 64°. All support sections are similar (scaled
+about the hinge), so both supports command the same deflection.
 
 ### Verification
 
-`core-js/tests/flaps.test.ts` checks the deflection against the closed-form
-four-bar solution, that unequal drives differ only by the split rotation,
-that a 20 mm spanwise offset of hinge 2 is taken by the lever swivel
-(asin(20 / 210)), the free support on either side and parameter validation.
-`test-suite/py` runs the same demo through the Python port.
+`core-js/tests/flaps.test.ts` checks hinge sweep, taper and trailing-edge
+sweep, the split axis at 1/3 chord parallel to the hinge line, deflection
+against the closed-form four-bar, rigging absorption at the split, a round
+trip back to the reference pose, jamming beyond the split range, spanwise
+offset taken by the swivel, the free support on either side and parameter
+validation. `test-suite/py` runs the same demo through the Python port.

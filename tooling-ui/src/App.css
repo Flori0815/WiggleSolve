@@ -323,3 +323,6 @@ code { font-size: var(--text-xs); }
 .swatch.anchor { width: 10px; height: 10px; border-radius: 2px; background: var(--c-actuator); }
 .swatch.range { background: color-mix(in srgb, var(--c-actuator) 50%, transparent); }
 .swatch.value { height: 2px; background: #22c55e; }
+
+.plain-list { margin: 0; padding-left: 16px; font-size: var(--text-sm); }
+.plain-list li { margin: 1px 0; }

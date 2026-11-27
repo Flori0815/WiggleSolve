@@ -509,3 +509,37 @@ class TestDefinition:
     def test_sequence_carries_damping(self):
         loop = build_sequence(self.DEF)[0]
         assert loop.steps[0].operation.damping == 0.8
+
+
+class TestCloseLoops:
+    def test_two_link_arm_reaches_target(self):
+        from wigglesolve.math.linalg import solve_linear
+        from wigglesolve.solver.close_loops import CloseLoopsOperation, LoopJoint, apply_close_loops
+
+        system = KinematicSystem()
+        base, l1, l2 = RigidBody("base"), RigidBody("l1"), RigidBody("l2")
+        base.add_node(Node("p0"))
+        p1 = Node("p1")
+        p1.local_transform = Matrix4x4().translate(1, 0, 0)
+        l1.add_node(p1)
+        tip = Node("tip")
+        tip.local_transform = Matrix4x4().translate(2, 0, 0)
+        l2.add_node(tip)
+        for b in (base, l1, l2):
+            system.add_body(b)
+        target = Node("target")
+        target.absolute_transform = Matrix4x4().translate(1.9, 0.3, 0)
+        system.add_node(target)
+        system.add_joint(Joint("j1"))
+        system.add_joint(Joint("j2"))
+        system.update_forward_kinematics()
+        op = CloseLoopsOperation(
+            joints=[LoopJoint("j1", "p0", ["l1", "l2"]), LoopJoint("j2", "p1", ["l2"])],
+            pairs=[("tip", "target")],
+        )
+        for _ in range(8):
+            apply_close_loops(system, op)
+        a = tip.absolute_transform.get_translation()
+        b = target.absolute_transform.get_translation()
+        assert math.dist(a, b) < 1e-6
+        assert solve_linear([[1, 2], [2, 4]], [1, 2]) is None

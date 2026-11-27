@@ -139,28 +139,28 @@ def test_demo_smoke(filename):
 class TestDroppedHingeFlap:
     """Cross-language check of the generated flap demo (see core-js tests/flaps.test.ts)."""
 
-    def _drive(self, crank_deg_1, crank_deg_2):
-        from wigglesolve.definition import build_sequence, build_system, load_definition_file
+    def _run(self, drive_deg, rigging_deg=0.0):
+        from wigglesolve.definition import build_sequence, build_system, drive_actuator, load_definition_file
         from wigglesolve.solver.executor import Executor
 
         definition = load_definition_file(DEMOS_DIR / 'dropped_hinge_flap.json')
         system = build_system(definition)
-        system.apply_actuator_delta('gra_1', 'gra_1_axis', ['crank_1', 'strut_1'], math.radians(crank_deg_1))
-        system.apply_actuator_delta('gra_2', 'gra_2_axis', ['crank_2', 'strut_2'], math.radians(crank_deg_2))
+        actuators = {a['id']: a for a in definition['actuators']}
+        drive_actuator(system, actuators['flap_drive'], math.radians(drive_deg))
+        drive_actuator(system, actuators['gra_2_rigging'], math.radians(rigging_deg))
         converged = Executor(system).execute(build_sequence(definition))
         return converged, system
 
-    def test_equal_drives_match_four_bar(self):
-        converged, system = self._drive(30, 30)
+    def test_torque_shaft_drive_matches_four_bar(self):
+        converged, system = self._run(30)
         assert converged
         assert math.degrees(system.joints['hinge_1_z'].value) == pytest.approx(-28.09, abs=0.05)
         assert math.degrees(system.joints['flap_split_rot'].value) == pytest.approx(0, abs=0.05)
 
-    def test_unequal_drives_only_rotate_at_the_split(self):
-        converged, system = self._drive(40, 25)
+    def test_rigging_offset_is_absorbed_at_the_split(self):
+        converged, system = self._run(30, 2)
         assert converged
-        assert math.degrees(system.joints['hinge_1_z'].value) == pytest.approx(-36.58, abs=0.05)
-        assert math.degrees(system.joints['flap_split_rot'].value) == pytest.approx(13.0, abs=0.1)
+        assert math.degrees(system.joints['flap_split_rot'].value) == pytest.approx(-1.77, abs=0.05)
         lever_end = system.nodes['lever_2_end'].absolute_transform.get_translation()
         hinge = system.nodes['hinge_2'].absolute_transform.get_translation()
         assert _dist(lever_end, hinge) < 1e-4

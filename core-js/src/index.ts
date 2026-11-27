@@ -3,6 +3,7 @@ export * from './math/Vector3';
 export * from './math/Matrix4x4';
 export * from './math/matrixHelpers';
 export * from './math/axis';
+export * from './math/linalg';
 // Elements
 export * from './elements/Node';
 export * from './elements/RigidBody';
@@ -15,6 +16,7 @@ export * from './system/snapshot';
 export * from './solver/Executor';
 export * from './solver/conditions';
 export * from './solver/operations';
+export * from './solver/closeLoops';
 // Definition (JSON interchange)
 export * from './definition';
 // Visual representation
