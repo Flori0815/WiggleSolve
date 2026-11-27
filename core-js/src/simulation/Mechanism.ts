@@ -15,6 +15,8 @@ export interface SolveResult {
   converged: boolean;
   /** Set when the sequence could not run (e.g. it references a missing node). */
   error?: string;
+  /** When not converged: solver joints that ended at one of their limits (likely cause). */
+  jointsAtLimit?: string[];
 }
 
 export type ElementKind = 'node' | 'body' | 'actuator';
@@ -130,10 +132,23 @@ export class Mechanism {
   /** Runs the solving sequence. Never throws: errors are reported in the result. */
   solve(): SolveResult {
     try {
-      return { converged: new Executor(this.system).execute(this.sequence) };
+      if (new Executor(this.system).execute(this.sequence)) return { converged: true };
+      return { converged: false, jointsAtLimit: this.solverJointsAtLimit() };
     } catch (e) {
       return { converged: false, error: e instanceof Error ? e.message : String(e) };
     }
+  }
+
+  private solverJointsAtLimit(): string[] {
+    const ids = new Set<string>();
+    const collect = (list: Instruction[]) => list.forEach(i => {
+      if (i.type === 'loop') collect(i.steps); else ids.add(i.operation.jointId);
+    });
+    collect(this.sequence);
+    return [...ids].filter(id => {
+      const joint = this.system.joints.get(id);
+      return joint !== undefined && joint.limits.some(limit => Math.abs(joint.value - limit) < 1e-9);
+    });
   }
 
   /** Sets an actuator and re-solves the dependent constraints. */

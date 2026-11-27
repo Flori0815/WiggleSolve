@@ -153,13 +153,14 @@ class TestDroppedHingeFlap:
     def test_equal_drives_match_four_bar(self):
         converged, system = self._drive(30, 30)
         assert converged
-        for i in (1, 2):
-            assert math.degrees(system.joints[f'flap_{i}_rot'].value) == pytest.approx(-28.07, abs=0.1)
+        assert math.degrees(system.joints['hinge_1_z'].value) == pytest.approx(-28.09, abs=0.05)
+        assert math.degrees(system.joints['flap_split_rot'].value) == pytest.approx(0, abs=0.05)
 
-    def test_unequal_drives_keep_panels_coupled_at_split(self):
+    def test_unequal_drives_only_rotate_at_the_split(self):
         converged, system = self._drive(40, 25)
         assert converged
-        a = system.nodes['flap_1_axis_split'].absolute_transform.get_translation()
-        b = system.nodes['flap_2_axis_split'].absolute_transform.get_translation()
-        assert _dist(a, b) < 1e-6
-        assert system.joints['flap_1_rot'].value < system.joints['flap_2_rot'].value
+        assert math.degrees(system.joints['hinge_1_z'].value) == pytest.approx(-36.58, abs=0.05)
+        assert math.degrees(system.joints['flap_split_rot'].value) == pytest.approx(13.0, abs=0.1)
+        lever_end = system.nodes['lever_2_end'].absolute_transform.get_translation()
+        hinge = system.nodes['hinge_2'].absolute_transform.get_translation()
+        assert _dist(lever_end, hinge) < 1e-4

@@ -2,10 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { parseDefinition } from '../src/definition/build';
 import { Mechanism } from '../src/simulation/Mechanism';
-import { applyJointDelta } from '../src/system/utils';
 import {
   DROPPED_HINGE_FLAP_DEFAULTS as P,
   droppedHingeFlap,
+  FLAP_SPLIT_JOINT,
+  FLAP_SPLIT_NODE,
   flapIds,
   formatDefinition,
   GENERATED_DEMOS,
@@ -45,97 +46,93 @@ const pos = (m: Mechanism, id: string) => m.system.nodes.get(id)!.absoluteTransf
 const jointValue = (m: Mechanism, id: string) => m.system.joints.get(id)!.value;
 
 describe('droppedHingeFlap', () => {
-  test('produces a valid definition with two actuators and three loops', () => {
+  test('uses only the kinematically required bodies; representation is meshes', () => {
     const def = parseDefinition(droppedHingeFlap());
+    expect(def.system.bodies.map(b => b.id)).toEqual(['wing', 'crank_1', 'strut_1', 'flap_1', 'crank_2', 'strut_2', 'flap_2', 'lever_2']);
+    expect(def.system.bodies.every(b => (b.visuals ?? []).length > 0)).toBe(true);
     expect(def.actuators.map(a => a.id)).toEqual(['gra_1', 'gra_2']);
-    expect(def.sequence).toHaveLength(3);
-    expect(def.system.joints.find(j => j.id === 'support_2_slide')?.type).toBe('prismatic');
+    expect(def.sequence).toHaveLength(1);
+    expect(def.sequence[0].condition).toMatchObject({ type: 'all_distances_less_than', pairs: [
+      ['strut_1_end', 'flap_1_lug'], ['strut_2_end', 'flap_2_lug'], ['lever_2_end', 'hinge_2'],
+    ] });
   });
 
   test('reference pose is closed', () => {
     const m = build();
-    for (const i of [1, 2]) {
-      const id = flapIds(i);
-      expect(dist(pos(m, id.strutEnd), pos(m, id.lug))).toBeLessThan(1e-6);
-    }
+    expect(m.solve()).toEqual({ converged: true });
+    expect(dist(pos(m, 'lever_2_end'), pos(m, 'hinge_2'))).toBeLessThan(1e-6);
   });
 
-  test.each([10, 30, 45, 60])('drive %i° matches the analytic four-bar solution', crankDeg => {
+  test.each([10, 30, 45, 60])('equal drives %i°: flap angle matches the analytic four-bar, split stays aligned', crankDeg => {
     const m = build();
-    expect(m.drive('gra_1', crankDeg * DEG)).toEqual({ converged: true });
+    m.drive('gra_1', crankDeg * DEG);
     expect(m.drive('gra_2', crankDeg * DEG)).toEqual({ converged: true });
-    const expected = analyticFlapAngle(crankDeg * DEG) / DEG;
-    expect(jointValue(m, 'flap_1_rot') / DEG).toBeCloseTo(expected, 1);
-    expect(jointValue(m, 'flap_2_rot') / DEG).toBeCloseTo(expected, 1);
+    expect(jointValue(m, 'hinge_1_z') / DEG).toBeCloseTo(analyticFlapAngle(crankDeg * DEG) / DEG, 1);
+    expect(Math.abs(jointValue(m, FLAP_SPLIT_JOINT))).toBeLessThan(0.02 * DEG);
   });
 
   test('positive drive lowers the trailing edge', () => {
     const m = build();
-    const before = pos(m, 'flap_1_te_in')[1];
+    const before = pos(m, 'flap_1_lug')[0];
     m.drive('gra_1', 40 * DEG);
-    expect(pos(m, 'flap_1_te_in')[1]).toBeLessThan(before - 0.3);
+    m.drive('gra_2', 40 * DEG);
+    // The lug sits above the hinge, so trailing edge down moves it aft.
+    expect(pos(m, 'flap_1_lug')[0]).toBeGreaterThan(before + 0.05);
   });
 
-  test('panels follow their own actuator: unequal drives are not over-constrained', () => {
+  test('unequal drives: the panels differ only by the split rotation; everything else stays connected', () => {
     const m = build();
     m.drive('gra_1', 40 * DEG);
-    const result = m.drive('gra_2', 25 * DEG);
-    expect(result.converged).toBe(true);
-    expect(jointValue(m, 'flap_1_rot')).toBeCloseTo(analyticFlapAngle(40 * DEG), 3);
-    expect(jointValue(m, 'flap_2_rot')).toBeCloseTo(analyticFlapAngle(25 * DEG), 3);
-    // Struts stay rigid.
+    expect(m.drive('gra_2', 25 * DEG).converged).toBe(true);
+    const inner = analyticFlapAngle(40 * DEG);
+    const outer = analyticFlapAngle(25 * DEG);
+    expect(jointValue(m, 'hinge_1_z')).toBeCloseTo(inner, 3);
+    expect(jointValue(m, FLAP_SPLIT_JOINT)).toBeCloseTo(outer - inner, 3);
+    // Struts stay rigid; the free lever stays on its spherical hinge.
     const strutLength = (i: number) => dist(pos(m, flapIds(i).strutTop), pos(m, flapIds(i).strutEnd));
     expect(strutLength(1)).toBeCloseTo(strutLength(2), 5);
-    // Halves stay coupled on the hinge axis at the split.
-    expect(dist(pos(m, 'flap_1_axis_split'), pos(m, 'flap_2_axis_split'))).toBeLessThan(1e-6);
+    expect(dist(pos(m, 'lever_2_end'), pos(m, 'hinge_2'))).toBeLessThan(P.tolerance);
+    // The split point is shared: both panels keep it on the hinge axis.
+    const split = m.system.nodes.get(FLAP_SPLIT_NODE)!.absoluteTransform.getTranslation();
+    expect(split[0]).toBeCloseTo(P.hinge[0], 4);
+    expect(split[1]).toBeCloseTo(P.hinge[1], 4);
   });
 
-  test('the free support absorbs a spanwise offset of its panel', () => {
-    const m = build();
-    const id = flapIds(2);
-    const bodies = [id.panel, id.bracket, id.hingeLine].map(b => m.system.bodies.get(b)!);
-    const shift = m.system.joints.get(id.slideJoint)!;
-    applyJointDelta(shift, m.system.nodes.get(id.hinge)!, bodies, 0.02);
-    expect(dist(pos(m, 'flap_1_axis_split'), pos(m, 'flap_2_axis_split'))).toBeCloseTo(0.02, 5);
-
-    expect(m.solve().converged).toBe(true);
-    expect(dist(pos(m, 'flap_1_axis_split'), pos(m, 'flap_2_axis_split'))).toBeLessThan(P.tolerance);
-    expect(jointValue(m, id.slideJoint)).toBeCloseTo(-0.02, 3);
-    expect(jointValue(m, 'flap_2_rot')).toBeCloseTo(0, 6);
-    // The strut's rod ends take the spanwise offset back out of the support plane.
-    expect(dist(pos(m, id.strutEnd), pos(m, id.lug))).toBeLessThan(P.tolerance);
-
-    // Driving still closes every loop with the panel shifted.
+  test('spanwise offset of the free hinge is taken by the lever swivel', () => {
+    const def = droppedHingeFlap();
+    const wing = def.system.bodies.find(b => b.id === 'wing')!;
+    wing.nodes.find(n => n.id === 'hinge_2')!.localTransform[14] += 0.02;
+    const m = new Mechanism();
+    m.load(def);
+    expect(m.startSimulation().converged).toBe(true);
+    m.drive('gra_1', 30 * DEG);
     expect(m.drive('gra_2', 30 * DEG).converged).toBe(true);
-    expect(jointValue(m, 'flap_2_rot')).toBeCloseTo(analyticFlapAngle(30 * DEG), 3);
-    expect(m.system.joints.has('support_1_slide')).toBe(false);
+    const leverLength = Math.hypot(P.leverPivot[0] - P.hinge[0], P.leverPivot[1] - P.hinge[1]);
+    expect(Math.abs(jointValue(m, 'lever_2_swivel'))).toBeCloseTo(Math.asin(0.02 / leverLength), 3);
+    expect(jointValue(m, 'hinge_1_z')).toBeCloseTo(analyticFlapAngle(30 * DEG), 3);
+    expect(dist(pos(m, 'lever_2_end'), pos(m, 'hinge_2'))).toBeLessThan(P.tolerance);
   });
 
-  test('spanwise wing strain at the free support is taken by the hinge slide and the strut rod ends', () => {
+  test('asymmetry beyond the split range jams and reports the limiting joint', () => {
     const m = build();
-    const id = flapIds(2);
-    // Move the wing-side hardware of support 2 outboard (e.g. wing bending/thermal strain).
-    const hardware = [id.support, id.crank, id.strut].map(b => m.system.bodies.get(b)!);
-    const strain = m.system.joints.get(id.slideJoint)!;
-    applyJointDelta(strain, m.system.nodes.get('spar_root')!, hardware, 0.02);
-
-    expect(m.drive('gra_2', 30 * DEG).converged).toBe(true);
-    // The panel keeps its spanwise position (coupled at the split) ...
-    expect(dist(pos(m, 'flap_1_axis_split'), pos(m, 'flap_2_axis_split'))).toBeLessThan(P.tolerance);
-    expect(pos(m, id.flapHinge)[2]).toBeCloseTo(P.supports[1].station, 5);
-    // ... the strut closes by tilting on its rod ends ...
-    expect(dist(pos(m, id.strutEnd), pos(m, id.lug))).toBeLessThan(P.tolerance);
-    expect(Math.abs(jointValue(m, id.strutTiltJoint))).toBeGreaterThan(1 * DEG);
-    // ... and the flap angle barely changes (strut projection shortens slightly).
-    expect(Math.abs(jointValue(m, 'flap_2_rot') - analyticFlapAngle(30 * DEG))).toBeLessThan(0.5 * DEG);
+    const result = m.drive('gra_1', 45 * DEG);
+    expect(result.converged).toBe(false);
+    expect(result.jointsAtLimit).toEqual([FLAP_SPLIT_JOINT]);
+    expect(m.drive('gra_2', 40 * DEG)).toEqual({ converged: true });
   });
 
   test('either support can be the spanwise-free one', () => {
     const def = droppedHingeFlap({
       supports: [{ station: 0.75, spanwise: 'free' }, { station: 2.25, spanwise: 'fixed' }],
     });
-    expect(def.system.joints.some(j => j.id === 'support_1_slide')).toBe(true);
-    expect(def.sequence[0].steps[0].operation.effectorNode).toBe('flap_1_axis_split');
+    expect(def.system.bodies.some(b => b.id === 'lever_1')).toBe(true);
+    expect(def.system.joints.some(j => j.id === 'hinge_2_z')).toBe(true);
+    const m = new Mechanism();
+    m.load(def);
+    m.startSimulation();
+    m.drive('gra_1', 20 * DEG);
+    expect(m.drive('gra_2', 35 * DEG).converged).toBe(true);
+    expect(jointValue(m, 'hinge_2_z')).toBeCloseTo(analyticFlapAngle(35 * DEG), 3);
   });
 
   test('rejects inconsistent parameters', () => {

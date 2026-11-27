@@ -22,11 +22,13 @@ const EDIT_TABS: Array<{ id: EditTab; label: string }> = [
 
 const StatusBanner = ({ status }: { status: SolverStatus }) => {
   if (status.state === 'idle') return null;
-  const text = {
-    converged: 'All loops closed',
-    timeout: 'Not converged — check the loop setup or raise max iterations',
-    error: status.state === 'error' ? status.message : '',
-  }[status.state];
+  let text = 'All loops closed';
+  if (status.state === 'error') text = status.message;
+  if (status.state === 'timeout') {
+    text = status.jointsAtLimit.length > 0
+      ? `Not converged — at joint limit: ${status.jointsAtLimit.join(', ')}`
+      : 'Not converged — check the loop setup or raise max iterations';
+  }
   return <div className={`status status-${status.state}`} role="status">{text}</div>;
 };
 

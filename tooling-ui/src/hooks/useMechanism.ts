@@ -6,11 +6,13 @@ export type AppMode = 'edit' | 'simulate';
 export type SolverStatus =
   | { state: 'idle' }
   | { state: 'converged' }
-  | { state: 'timeout' }
+  | { state: 'timeout'; jointsAtLimit: string[] }
   | { state: 'error'; message: string };
 
-const toStatus = (r: SolveResult): SolverStatus =>
-  r.error ? { state: 'error', message: r.error } : { state: r.converged ? 'converged' : 'timeout' };
+const toStatus = (r: SolveResult): SolverStatus => {
+  if (r.error) return { state: 'error', message: r.error };
+  return r.converged ? { state: 'converged' } : { state: 'timeout', jointsAtLimit: r.jointsAtLimit ?? [] };
+};
 
 /**
  * Owns the single {@link Mechanism} instance of the app and exposes it to React.

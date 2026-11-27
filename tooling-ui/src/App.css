@@ -135,6 +135,7 @@ input[type='range'] { width: 100%; accent-color: var(--mode); }
 
 .row { display: flex; gap: 8px; align-items: flex-end; }
 .row > * { flex: 1; min-width: 0; }
+.row > .btn-icon { flex: 0 0 auto; align-self: center; }
 
 .number-field { display: flex; flex-direction: column; gap: 2px; }
 .number-field input { width: 100%; }

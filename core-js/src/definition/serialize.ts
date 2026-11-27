@@ -1,5 +1,6 @@
 import type { Matrix4x4 } from '../math/Matrix4x4';
 import type { Instruction } from '../solver/Executor';
+import { copyCondition } from '../solver/conditions';
 import type { KinematicSystem } from '../system/KinematicSystem';
 import { DefinitionError } from './build';
 import type { ActuatorDef, LoopDef, MechanismDefinition } from './schema';
@@ -18,7 +19,7 @@ function serializeSequence(sequence: Instruction[]): LoopDef[] {
     return {
       type: 'loop',
       max_iterations: instr.max_iterations,
-      condition: { ...instr.condition },
+      condition: copyCondition(instr.condition),
       steps: instr.steps.map((step, j) => {
         if (step.type !== 'operation') {
           throw new DefinitionError([`[sequence.${i}.steps.${j}] nested loops are not serialisable`]);

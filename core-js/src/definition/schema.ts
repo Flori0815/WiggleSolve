@@ -72,12 +72,19 @@ export const StepDefSchema = z.object({
 export const LoopDefSchema = z.object({
   type: z.literal('loop'),
   max_iterations: z.number().int().nonnegative(),
-  condition: z.object({
-    type: z.literal('distance_less_than'),
-    nodeA: z.string(),
-    nodeB: z.string(),
-    threshold: z.number().positive(),
-  }),
+  condition: z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('distance_less_than'),
+      nodeA: z.string(),
+      nodeB: z.string(),
+      threshold: z.number().positive(),
+    }),
+    z.object({
+      type: z.literal('all_distances_less_than'),
+      pairs: z.array(z.tuple([z.string(), z.string()])).min(1),
+      threshold: z.number().positive(),
+    }),
+  ]),
   steps: z.array(StepDefSchema),
 });
 
