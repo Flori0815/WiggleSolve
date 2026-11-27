@@ -15,6 +15,7 @@ npm run dev         # web app on http://localhost:5173
 | `npm run test:coverage -w @wigglesolve/core` | Core unit tests with the 100 % coverage gate used by CI |
 | `npm run test:py` | Python unit tests (`core-py/tests`) + Python integration tests (`test-suite/py`) |
 | `npm run build` | Builds core, web app and MCP server |
+| `npm run generate:demos -w @wigglesolve/core` | Regenerates demo files produced by parametric generators (a test fails if they are stale) |
 
 ## Repository layout
 

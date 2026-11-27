@@ -13,6 +13,7 @@ import carSeatAdjuster        from '@demos/car_seat_adjuster.json';
 import stageSpotlight         from '@demos/stage_spotlight.json';
 import periscope              from '@demos/periscope.json';
 import retractableLandingGear from '@demos/retractable_landing_gear.json';
+import droppedHingeFlap       from '@demos/dropped_hinge_flap.json';
 import fdm3dPrinter           from '@demos/fdm_3d_printer.json';
 import conveyorDiverter       from '@demos/conveyor_diverter.json';
 import windTurbineYaw         from '@demos/wind_turbine_yaw.json';
@@ -36,6 +37,7 @@ export const DEMOS: DemoEntry[] = [
   { id: 'stage_spotlight',          category: 'Cameras & optics', definition: stageSpotlight },
   { id: 'telescope_altaz',          category: 'Cameras & optics', definition: telescopeAltaz },
   { id: 'periscope',                category: 'Cameras & optics', definition: periscope },
+  { id: 'dropped_hinge_flap',       category: 'Aerospace',     definition: droppedHingeFlap },
   { id: 'satellite_dish',           category: 'Aerospace',     definition: satelliteDish },
   { id: 'retractable_landing_gear', category: 'Aerospace',     definition: retractableLandingGear },
   { id: 'solar_tracker',            category: 'Energy',        definition: solarTracker },

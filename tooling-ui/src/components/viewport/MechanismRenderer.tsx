@@ -3,12 +3,12 @@ import type { KinematicSystem } from '@wigglesolve/core';
 import { BODY_COLORS, positionOf } from './scene';
 import { Label } from './Label';
 
-type Props = { system: KinematicSystem; size: number; showLabels: boolean; showFrames: boolean };
+type Props = { system: KinematicSystem; size: number; showLabels: boolean; showNodeLabels: boolean; showFrames: boolean };
 
 const Y_UP = new THREE.Vector3(0, 1, 0);
 
 /** Bodies as rods between their nodes, nodes as spheres (anchors as cubes). */
-export const MechanismRenderer = ({ system, size, showLabels, showFrames }: Props) => {
+export const MechanismRenderer = ({ system, size, showLabels, showNodeLabels, showFrames }: Props) => {
   const rod = size * 0.012;
   const items: React.ReactNode[] = [];
 
@@ -63,7 +63,7 @@ export const MechanismRenderer = ({ system, size, showLabels, showFrames }: Prop
           />
         </mesh>
         {showFrames && <primitive object={new THREE.AxesHelper(size * 0.08)} />}
-        {showLabels && <Label offset="below">{node.id}</Label>}
+        {showNodeLabels && <Label offset="below">{node.id}</Label>}
       </group>,
     );
   });

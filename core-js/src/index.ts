@@ -19,3 +19,5 @@ export * from './solver/operations';
 export * from './definition';
 // Simulation
 export * from './simulation/Mechanism';
+// Mechanism library (parametric generators)
+export * from './mechanisms';
