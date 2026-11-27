@@ -25,7 +25,7 @@ well — with taper about the hinge line it is swept less than the hinge line
 ```
  support 1 (spanwise fixed)                support 2 (spanwise free)
 
- wing ──◉ GRA ═══════ torque shaft ═════════ wing ──◉ GRA (+ rigging offset)
+ wing ──◉ GRA 1 (driven)                     wing ──◉ GRA 2 (driven)
         │ crank                                     │ crank
         ●━━━━ strut ━━━━● lug                       ●━━━━ strut ━━━━● lug
                  flap 1 │                                   flap 2 │
@@ -51,8 +51,7 @@ well — with taper about the hinge line it is swept less than the hinge line
 
 | Joint / actuator | Meaning |
 |---|---|
-| `flap_drive` | power drive unit: turns both rotary actuators through the torque shaft (actuator with two outputs) |
-| `gra_2_rigging` | rigging / backlash offset of the outboard actuator (±2°) |
+| `gra_1`, `gra_2` | the two driven rotary actuators (independent inputs) |
 | `hinge_1_x/y/z` | spherical joint lever ↔ wing at the fixed support (three revolutes about wing-fixed axes) |
 | `flap_split_rot` | the only relative freedom between the panels |
 | `lever_2_swivel` | lets support 2 follow spanwise motion |
@@ -67,15 +66,18 @@ plausibility; the deflection is best read geometrically.
 
 Two panels and one lever have 18 DOF. The split revolute removes 5, the fixed
 spherical joint 3, the swivel revolute 5, the free spherical joint 3 and the
-two struts 1 each — leaving **0**. The two actuators therefore never fight:
+two struts 1 each — leaving **0**. Both actuators are driven, and the system is not
+over-determined thanks to the split axis:
 
 - equal actuator positions rotate both panels about the hinge line, the split
   stays at 0°;
-- a rigging difference twists the panels against each other at the split and
-  tilts the flap slightly about the fixed spherical joint — because the split
-  axis lies in the flap section, away from the hinge line;
+- any difference between the actuators (rigging, a lagging drive, even the
+  full travel of one against the other) twists the panels against each other
+  at the split and tilts the flap about the fixed spherical joint — because
+  the split axis lies in the flap section, away from the hinge line (e.g.
+  gra 1 at 60°, gra 2 at 0° → ≈ 49° at the split, ≈ 5–7° tilt);
 - spanwise wing strain at support 2 is taken by the lever swivel;
-- an asymmetry beyond `splitRange` (±15°) jams; the solver reports
+- only a difference beyond `splitRange` jams; the solver then reports
   `flap_split_rot` at its limit.
 
 ### Solving
@@ -97,11 +99,11 @@ a few milliseconds.
 | `hinge`, `lug`, `leverPivot` | `(0.60, −0.30)`, `(0.55, −0.15)`, `(0.60, −0.09)` | root section points |
 | `profile` | 6-point section | flap section (index 0 = leading edge) |
 | `actuatorAxis`, `crankLength`, `crankAngle` | `(0.15, −0.05)`, `0.15`, `0` | actuator and crank (root section) |
-| `driveRange`, `riggingRange` | `0…60°`, `±2°` | torque-shaft travel, rigging offset |
-| `flapRange`, `splitRange`, `swivelRange`, `sphericalRange`, `strutTilt` | `−70…10°`, `±15°`, `±15°`, `±30°`, `±10°` | joint limits |
+| `driveRange` | `0…60°` | travel of each rotary actuator |
+| `flapRange`, `splitRange`, `swivelRange`, `sphericalRange`, `strutTilt` | `−70…10°`, `±60°`, `±15°`, `±45°`, `±10°` | joint limits |
 | `tolerance`, `damping` | `1e-5`, `1e-3` | convergence tolerance, Levenberg-Marquardt λ |
 
-With the defaults, 60° of drive deflects the flap by about 49°; the four-bar
+With the defaults, 60° on both actuators deflects the flap by about 49°; the four-bar
 transmission angle stays above 64°. All support sections are similar (scaled
 about the hinge), so both supports command the same deflection.
 
@@ -109,7 +111,8 @@ about the hinge), so both supports command the same deflection.
 
 `core-js/tests/flaps.test.ts` checks hinge sweep, taper and trailing-edge
 sweep, the split axis at 1/3 chord parallel to the hinge line, deflection
-against the closed-form four-bar, rigging absorption at the split, a round
-trip back to the reference pose, jamming beyond the split range, spanwise
+against the closed-form four-bar, independent drives over the full travel
+(split takes the difference), a round trip back to the reference pose,
+jamming beyond a narrowed split range, spanwise
 offset taken by the swivel, the free support on either side and parameter
 validation. `test-suite/py` runs the same demo through the Python port.

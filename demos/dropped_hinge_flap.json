@@ -1,6 +1,6 @@
 {
   "name": "Dropped-Hinge Flap (swept, tapered)",
-  "description": "Two-panel tapered trailing-edge flap on the swept dropped hinge line of a swept wing. The panels are joined by a single revolute joint whose axis lies inside the flap section at one third of the chord. Inboard support: hinge lever fixed to the flap, spherical joint to the wing (spanwise fixed). Outboard support: lever swivelling on a flap-fixed axis, spherical joint to the wing (spanwise free). Each support has a rotary actuator driving the flap through a crank and drive strut.",
+  "description": "Two-panel tapered trailing-edge flap on the swept dropped hinge line of a swept wing. The panels are joined by a single revolute joint whose axis lies inside the flap section at one third of the chord. Inboard support: hinge lever fixed to the flap, spherical joint to the wing (spanwise fixed). Outboard support: lever swivelling on a flap-fixed axis, spherical joint to the wing (spanwise free). Each support has its own driven rotary actuator with crank and drive strut; differences between them are taken by the split.",
   "system": {
     "bodies": [
       {
@@ -229,28 +229,28 @@
         "limits": [-0.17453292519943295, 0.17453292519943295]
       },
       {
-        "id": "flap_drive",
+        "id": "gra_1",
         "type": "revolute",
         "axis": [0, 0, 1],
         "limits": [0, 1.0471975511965976]
       },
       {
-        "id": "gra_2_rigging",
+        "id": "gra_2",
         "type": "revolute",
         "axis": [0, 0, 1],
-        "limits": [-0.03490658503988659, 0.03490658503988659]
+        "limits": [0, 1.0471975511965976]
       },
       {
         "id": "hinge_1_x",
         "type": "revolute",
         "axis": [1, 0, 0],
-        "limits": [-0.5235987755982988, 0.5235987755982988]
+        "limits": [-0.7853981633974483, 0.7853981633974483]
       },
       {
         "id": "hinge_1_y",
         "type": "revolute",
         "axis": [0, 1, 0],
-        "limits": [-0.5235987755982988, 0.5235987755982988]
+        "limits": [-0.7853981633974483, 0.7853981633974483]
       },
       {
         "id": "hinge_1_z",
@@ -262,7 +262,7 @@
         "id": "flap_split_rot",
         "type": "revolute",
         "axis": [0, 0, 1],
-        "limits": [-0.2617993877991494, 0.2617993877991494]
+        "limits": [-1.0471975511965976, 1.0471975511965976]
       },
       {
         "id": "lever_2_swivel",
@@ -274,26 +274,17 @@
   },
   "actuators": [
     {
-      "id": "flap_drive",
+      "id": "gra_1",
       "type": "revolute",
       "axis": "z",
       "pivotNode": "gra_1_axis",
       "movingBodies": [
         "crank_1",
         "strut_1"
-      ],
-      "outputs": [
-        {
-          "pivotNode": "gra_2_axis",
-          "movingBodies": [
-            "crank_2",
-            "strut_2"
-          ]
-        }
       ]
     },
     {
-      "id": "gra_2_rigging",
+      "id": "gra_2",
       "type": "revolute",
       "axis": "z",
       "pivotNode": "gra_2_axis",

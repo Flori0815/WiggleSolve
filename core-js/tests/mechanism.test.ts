@@ -158,3 +158,30 @@ describe('actuator outputs', () => {
     expect(copy.actuators[0].outputs).toHaveLength(2);
   });
 });
+
+describe('jointFrames', () => {
+  test('collects actuator and solver joints with their pivots', () => {
+    const m = Mechanism.fromDefinition(demo('three_link_arm.json'));
+    const frames = m.jointFrames();
+    expect(frames).toContainEqual({ jointId: 'j1', type: 'revolute', axis: [0, 0, 1], pivotNode: 'base_pivot', role: 'actuator' });
+    // j1 is also used by the solver at the same pivot → listed once.
+    expect(frames.filter(f => f.jointId === 'j1')).toHaveLength(1);
+  });
+
+  test('covers outputs, close_loops joints, normalised axes and skips unknowns', () => {
+    const m = Mechanism.fromDefinition(demo('three_link_arm.json'));
+    m.actuators = [{ id: 'a', type: 'prismatic', axis: 'x', pivotNode: 'base_pivot', movingBodies: [], outputs: [{ pivotNode: 'link1_end', movingBodies: [] }, { pivotNode: 'ghost', movingBodies: [] }] }];
+    m.system.addJoint(new Joint('slanted', 'revolute', [0, 3, 4]));
+    m.system.addJoint(new Joint('weld', 'fixed'));
+    m.sequence = [{ type: 'loop', max_iterations: 1, condition: { type: 'distance_less_than', nodeA: 'a', nodeB: 'b', threshold: 1 }, steps: [
+      { type: 'operation', operation: { type: 'close_loops', pairs: [['a', 'b']], joints: [
+        { jointId: 'slanted', pivotNode: 'link2_end', movingBodies: [] },
+        { jointId: 'weld', pivotNode: 'link2_end', movingBodies: [] },
+        { jointId: 'missing', pivotNode: 'link2_end', movingBodies: [] },
+      ] } },
+    ] }];
+    const frames = m.jointFrames();
+    expect(frames.map(f => `${f.jointId}@${f.pivotNode}`)).toEqual(['a@base_pivot', 'a@link1_end', 'slanted@link2_end']);
+    expect(frames[2].axis).toEqual([0, 0.6, 0.8]);
+  });
+});

@@ -26,9 +26,8 @@ import type {
  * - Spanwise-free support: a separate lever swivels on a flap-fixed axis
  *   (normal to the hinge line) and meets the wing in a spherical joint.
  * - Each support: rotary actuator → crank → drive strut (rod ends) → lug.
- *   Both rotary actuators are driven by one power drive unit through the
- *   torque shaft (`flap_drive`); `gra_2_rigging` adds a rigging offset at the
- *   outboard actuator.
+ *   Both rotary actuators are driven independently (`gra_1`, `gra_2`); any
+ *   difference between them is taken by the split joint.
  *
  * Mobility: 2 panels + 1 lever (18) − split revolute (5) − fixed spherical (3)
  * − swivel revolute (5) − free spherical (3) − 2 struts (2) = 0. Because the
@@ -63,10 +62,8 @@ export interface DroppedHingeFlapParams {
   /** Crank length and reference direction (rad, 0 = pointing down, positive about the hinge axis). */
   crankLength: number;
   crankAngle: number;
-  /** Actuator travel [min, max] in rad relative to the reference pose (both actuators, torque shaft). */
+  /** Travel of each rotary actuator [min, max] in rad relative to the reference pose. */
   driveRange: [number, number];
-  /** Rigging / backlash offset of the outboard actuator relative to the shaft [min, max] in rad. */
-  riggingRange: [number, number];
   /** Flap rotation about the hinge axis [min, max] in rad (negative = trailing edge down). */
   flapRange: [number, number];
   /** Relative rotation of the panels at the split [min, max] in rad. */
@@ -96,8 +93,8 @@ export const DROPPED_HINGE_FLAP_DEFAULTS: DroppedHingeFlapParams = {
     'Two-panel tapered trailing-edge flap on the swept dropped hinge line of a swept wing. The panels are joined '
     + 'by a single revolute joint whose axis lies inside the flap section at one third of the chord. Inboard '
     + 'support: hinge lever fixed to the flap, spherical joint to the wing (spanwise fixed). Outboard support: '
-    + 'lever swivelling on a flap-fixed axis, spherical joint to the wing (spanwise free). Each support has a '
-    + 'rotary actuator driving the flap through a crank and drive strut.',
+    + 'lever swivelling on a flap-fixed axis, spherical joint to the wing (spanwise free). Each support has its '
+    + 'own driven rotary actuator with crank and drive strut; differences between them are taken by the split.',
   span: [0, 3],
   splitStation: 1.5,
   splitChordFraction: 1 / 3,
@@ -115,11 +112,10 @@ export const DROPPED_HINGE_FLAP_DEFAULTS: DroppedHingeFlapParams = {
   crankLength: 0.15,
   crankAngle: 0,
   driveRange: [0, 60 * DEG],
-  riggingRange: [-2 * DEG, 2 * DEG],
   flapRange: [-70 * DEG, 10 * DEG],
-  splitRange: [-15 * DEG, 15 * DEG],
+  splitRange: [-60 * DEG, 60 * DEG],
   swivelRange: [-15 * DEG, 15 * DEG],
-  sphericalRange: [-30 * DEG, 30 * DEG],
+  sphericalRange: [-45 * DEG, 45 * DEG],
   strutTilt: [-10 * DEG, 10 * DEG],
   tolerance: 1e-5,
   damping: 1e-3,
@@ -128,6 +124,7 @@ export const DROPPED_HINGE_FLAP_DEFAULTS: DroppedHingeFlapParams = {
 /** Ids of the elements generated for support / panel `i` (1-based). */
 export const flapIds = (i: number) => ({
   hinge: `hinge_${i}`,
+  actuator: `gra_${i}`,
   actuatorAxis: `gra_${i}_axis`,
   crank: `crank_${i}`,
   crankTip: `crank_${i}_tip`,
@@ -147,9 +144,6 @@ export const flapIds = (i: number) => ({
 
 export const FLAP_SPLIT_NODE = 'flap_split';
 export const FLAP_SPLIT_JOINT = 'flap_split_rot';
-/** Torque-shaft drive (both rotary actuators) and outboard rigging offset. */
-export const FLAP_DRIVE = 'flap_drive';
-export const FLAP_RIGGING = 'gra_2_rigging';
 
 const COLORS = { wing: '#64748b', flap: '#94a3b8', drive: '#f59e0b', lever: '#38bdf8' };
 
@@ -278,18 +272,13 @@ export function droppedHingeFlap(overrides: Partial<DroppedHingeFlapParams> = {}
       { id: id.strutTiltJoint, type: 'revolute', axis: [0, 1, 0], limits: [...p.strutTilt] },
     );
   }
-  // One power drive unit turns both rotary actuators through the torque shaft;
-  // a small rigging offset on the outboard actuator shows how the split
-  // absorbs the resulting over-determination.
-  const drive = (i: number) => ({ pivotNode: flapIds(i).actuatorAxis, movingBodies: [flapIds(i).crank, flapIds(i).strut] });
-  joints.push(
-    { id: FLAP_DRIVE, type: 'revolute', axis: [0, 0, 1], limits: [...p.driveRange] },
-    { id: FLAP_RIGGING, type: 'revolute', axis: [0, 0, 1], limits: [...p.riggingRange] },
-  );
-  const actuators: ActuatorDef[] = [
-    { id: FLAP_DRIVE, type: 'revolute', axis: 'z', ...drive(1), outputs: [drive(2)] },
-    { id: FLAP_RIGGING, type: 'revolute', axis: 'z', ...drive(2) },
-  ];
+  // Each support has its own driven rotary actuator. They may differ freely:
+  // the split joint keeps the system statically determinate.
+  const actuators: ActuatorDef[] = [1, 2].map(i => {
+    const id = flapIds(i);
+    joints.push({ id: id.actuator, type: 'revolute', axis: [0, 0, 1], limits: [...p.driveRange] });
+    return { id: id.actuator, type: 'revolute', axis: 'z', pivotNode: id.actuatorAxis, movingBodies: [id.crank, id.strut] };
+  });
   const [sphX, sphY, sphZ] = F.sphericalJoints;
   joints.push(
     { id: sphX, type: 'revolute', axis: [1, 0, 0], limits: [...p.sphericalRange] },

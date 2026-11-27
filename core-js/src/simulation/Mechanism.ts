@@ -22,6 +22,17 @@ export interface SolveResult {
 
 export type ElementKind = 'node' | 'body' | 'actuator';
 
+/** Where a joint acts: its axis (in the pivot node's frame) at a pivot node. */
+export interface JointFrame {
+  jointId: string;
+  type: 'revolute' | 'prismatic';
+  /** Unit direction in the pivot node's frame. */
+  axis: [number, number, number];
+  pivotNode: string;
+  /** `actuator` for manual drives, `solver` for joints moved by the sequence. */
+  role: 'actuator' | 'solver';
+}
+
 type LoopInstruction = Extract<Instruction, { type: 'loop' }>;
 
 /** Slider range used when an actuator has no (finite) joint limits. */
@@ -132,6 +143,38 @@ export class Mechanism {
     }
     this.driveValues.set(id, target);
     return target;
+  }
+
+  /**
+   * Every joint with the pivot it acts about, collected from the actuators
+   * (incl. their outputs) and the solving sequence. A joint used at several
+   * pivots appears once per pivot.
+   */
+  jointFrames(): JointFrame[] {
+    const frames = new Map<string, JointFrame>();
+    const add = (f: JointFrame) => {
+      const key = `${f.jointId}@${f.pivotNode}`;
+      if (!frames.has(key) && this.system.nodes.has(f.pivotNode)) frames.set(key, f);
+    };
+    for (const a of this.actuators) {
+      for (const pivotNode of [a.pivotNode, ...(a.outputs ?? []).map(o => o.pivotNode)]) {
+        add({ jointId: a.id, type: a.type, axis: axisVector(a.axis), pivotNode, role: 'actuator' });
+      }
+    }
+    const fromSolver = (jointId: string, pivotNode: string) => {
+      const joint = this.system.joints.get(jointId);
+      if (!joint || joint.type === 'fixed') return;
+      const len = Math.hypot(...joint.axis) || 1;
+      add({ jointId, type: joint.type, axis: joint.axis.map(v => v / len) as [number, number, number], pivotNode, role: 'solver' });
+    };
+    const visit = (list: Instruction[]) => list.forEach(i => {
+      if (i.type === 'loop') return visit(i.steps);
+      const op = i.operation;
+      if (op.type === 'align_node') fromSolver(op.jointId, op.pivotNode);
+      else op.joints.forEach(j => fromSolver(j.jointId, j.pivotNode));
+    });
+    visit(this.sequence);
+    return [...frames.values()];
   }
 
   /** Runs the solving sequence. Never throws: errors are reported in the result. */

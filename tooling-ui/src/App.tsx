@@ -133,7 +133,7 @@ function App() {
       </aside>
 
       <main className="main-view">
-        <Visualizer system={mechanism.system} actuators={actuatorViews} frameKey={loadCount} />
+        <Visualizer system={mechanism.system} actuators={actuatorViews} joints={mechanism.jointFrames()} frameKey={loadCount} />
       </main>
     </div>
   );
