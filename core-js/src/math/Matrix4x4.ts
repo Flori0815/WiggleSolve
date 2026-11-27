@@ -105,6 +105,26 @@ export class Matrix4x4 {
     return this.multiply(m);
   }
 
+  /**
+   * Post-multiplies a rotation of `theta` radians about an arbitrary axis
+   * (Rodrigues). The axis is normalised; a zero-length axis falls back to +Z.
+   */
+  rotateAxis(axis: [number, number, number], theta: number): Matrix4x4 {
+    const len = Math.hypot(axis[0], axis[1], axis[2]);
+    const [x, y, z] = len < 1e-12 ? [0, 0, 1] : [axis[0] / len, axis[1] / len, axis[2] / len];
+    const c = Math.cos(theta);
+    const s = Math.sin(theta);
+    const t = 1 - c;
+    const m = new Matrix4x4();
+    const te = m.elements;
+
+    te[0] = t * x * x + c;     te[4] = t * x * y - s * z; te[8] = t * x * z + s * y;
+    te[1] = t * x * y + s * z; te[5] = t * y * y + c;     te[9] = t * y * z - s * x;
+    te[2] = t * x * z - s * y; te[6] = t * y * z + s * x; te[10] = t * z * z + c;
+
+    return this.multiply(m);
+  }
+
   getTranslation(): [number, number, number] {
     const te = this.elements;
     return [te[12], te[13], te[14]];

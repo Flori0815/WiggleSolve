@@ -1,9 +1,10 @@
 import { Matrix4x4 } from '../math/Matrix4x4';
+import type { AxisName } from '../math/axis';
 
 export type NodeAlignment = {
-  primaryAxis: 'x' | 'y' | 'z' | null;
+  primaryAxis: AxisName | null;
   primaryTarget: string | null;
-  secondaryAxis: 'x' | 'y' | 'z' | null;
+  secondaryAxis: AxisName | null;
   secondaryTarget: string | null;
 };
 

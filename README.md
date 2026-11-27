@@ -1,43 +1,52 @@
-# WiggleSolve (Group-Based Kinematics)
+# WiggleSolve
 
-WiggleSolve is a non-linear, iterative kinematics solver based on **Rigid Body Groups** and explicit solving operations.
+WiggleSolve is an iterative kinematics solver built on **rigid-body groups** and
+explicit solving operations.
 
-Unlike traditional robotic solvers that rely on fixed parent-child kinematic chains, WiggleSolve treats the system as a collection of Rigid Bodies containing multiple spatial Nodes. Solving is performed by applying explicit transformations to these groups to satisfy geometric constraints.
+Instead of a fixed parent–child chain, a mechanism is a set of rigid bodies,
+each carrying coordinate frames (nodes). Manual **actuators** move groups of
+bodies about a pivot; a **solving sequence** of loops and `align_node` steps
+then closes the remaining geometric constraints (e.g. a drive strut that must
+meet its attachment lug). This makes closed loops and redundant drives easy to
+express.
 
-## Core Concepts
+## Quick start
 
-### 1. Rigid Bodies & Nodes
-- **Rigid Body:** A container that holds a set of Nodes. All nodes in a body move together as a single rigid unit.
-- **Node:** A coordinate frame defined by a 4x4 Transformation Matrix. A node has a `localTransform` relative to its body and a computed `absoluteTransform` in world space.
-- **Global Nodes:** Standalone reference frames used for targets or world-space anchors.
+```bash
+npm ci
+npm run dev        # web app on http://localhost:5173
+npm test           # core unit + integration tests
+```
 
-### 2. Manual Solving Logic (Explicit Operations)
-Instead of an automated tree traversal, solving is defined through explicit **Align** operations:
-- **Effector:** The node you want to move.
-- **Target:** The coordinate frame you want to reach.
-- **Pivot:** The physical location and orientation of the joint axis.
-- **Moving Bodies:** An explicit list of Rigid Bodies that will be transformed by this step.
+In the web app, pick a demo, switch to **Solved** and move the actuator
+sliders; the solver re-closes all loops on every change.
 
-### 3. Actuators
-Actuators are physical drivers applied *before* the iterative loops. They allow for manual interactive control of the mechanism. Moving an actuator slider rigidly transforms its associated bodies around a pivot.
+## Core concepts
 
-### 4. Definition Mode Alignments (LookAt)
-During the design phase, nodes can be dynamically aligned to other nodes using **LookAt** logic. You can specify a primary axis (X, Y, or Z) and a target node; the system will automatically calculate the necessary `localTransform` to maintain that orientation.
+| Concept | Meaning |
+|---|---|
+| Rigid body | A group of nodes that move together |
+| Node | A coordinate frame (4×4 SE(3) matrix), local to its body or global |
+| Joint | One degree of freedom (revolute / prismatic) with limits |
+| Actuator | A manual drive moving bodies about a pivot node |
+| Sequence | Loops of `align_node` steps that run until a distance condition holds |
+| LookAt | Definition-time alignment of a node's axis toward another node |
 
-## Technical Architecture
+## Repository
 
-### Core Engine (`core-js`)
-- **Matrix-First Math:** Pure SE(3) math using 4x4 matrices for all transformations.
-- **Delta-Transform Solver:** Calculates incremental spatial corrections at the pivot and applies them to body groups.
-- **Hoisted Workspaces:** Optimized monorepo structure with shared developer tools and dependency-free logic.
+| Path | Content |
+|---|---|
+| `core-js/` | `@wigglesolve/core` — the TypeScript engine |
+| `core-py/` | Python port of the engine |
+| `tooling-ui/` | React + three.js web app |
+| `mcp-server/` | MCP server for agent-driven modelling |
+| `test-suite/` | Cross-language integration tests |
+| `demos/`, `definitions/`, `templates/` | Mechanism definitions (JSON) |
+| `docs/` | Documentation |
 
-### UI Tooling (`tooling-ui`)
-- **Real-Time Visualizer:** 3D viewport showing bodies, coordinate frames, and rigid links.
-- **Interactive Sequence Editor:** Build nested loops and alignment logic visually.
-- **Live Simulator:** Drive actuators in "Solved Mode" to see real-time convergence and mechanism behavior.
+## Documentation
 
-## Workflow
-1. **Design:** Create Rigid Bodies and Nodes. Use LookAt Align to set up complex orientations.
-2. **Drive:** Define Actuators to specify how you want to manually interact with the machine.
-3. **Logic:** Build a Solving Sequence with loops and Align steps to handle the automated constraints.
-4. **Solve:** Drag the Actuator sliders to see your mechanism come to life.
+- [Architecture](docs/architecture.md)
+- [Definition format](docs/definition-format.md)
+- [Development](docs/development.md)
+- [MCP server & templates](docs/mcp-server.md)

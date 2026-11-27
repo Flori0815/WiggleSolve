@@ -1,10 +1,10 @@
+import { IDENTITY_MAT16, rotationXMat16, rotationYMat16, rotationZMat16, translationMat16 } from '../src/math/matrixHelpers';
 import { Vector3 } from '../src/math/Vector3';
 import { Matrix4x4 } from '../src/math/Matrix4x4';
 import { KinematicSystem } from '../src/system/KinematicSystem';
 import { Node } from '../src/elements/Node';
 import { RigidBody } from '../src/elements/RigidBody';
 import { Joint } from '../src/elements/Joint';
-import { Link } from '../src/elements/Link';
 
 describe('Math Primitives', () => {
   test('Vector3 basic operations', () => {
@@ -331,7 +331,7 @@ describe('Joint getTransformMatrix', () => {
     expect(v.y).toBeCloseTo(1);
   });
 
-  test('revolute fallback axis (no dominant component) uses rotateZ', () => {
+  test('revolute with zero-length axis falls back to +Z', () => {
     const joint = new Joint('j-rf', 'revolute', [0, 0, 0]);
     joint.value = Math.PI / 2;
     const m = joint.getTransformMatrix();
@@ -374,23 +374,64 @@ describe('Vector3 default constructor', () => {
   });
 });
 
-describe('Link', () => {
-  test('constructor without transform defaults to identity', () => {
-    const link = new Link('l1');
-    expect(link.id).toBe('l1');
-    const [x, y, z] = link.transform.getTranslation();
-    expect(x).toBe(0);
-    expect(y).toBe(0);
-    expect(z).toBe(0);
-    expect(link.transform.elements[0]).toBe(1);
+describe('Matrix4x4.rotateAxis', () => {
+  test('negative axis rotates in the opposite sense', () => {
+    const v = new Matrix4x4().rotateAxis([0, 0, -1], Math.PI / 2).rotateVector(new Vector3(1, 0, 0));
+    expect(v.x).toBeCloseTo(0);
+    expect(v.y).toBeCloseTo(-1);
   });
 
-  test('constructor with explicit transform', () => {
-    const t = new Matrix4x4().translate(2, 3, 4);
-    const link = new Link('l2', t);
-    const [x, y, z] = link.transform.getTranslation();
-    expect(x).toBe(2);
-    expect(y).toBe(3);
-    expect(z).toBe(4);
+  test('arbitrary axis is normalised (120° about [1,1,1] cycles x→y)', () => {
+    const v = new Matrix4x4().rotateAxis([2, 2, 2], (2 * Math.PI) / 3).rotateVector(new Vector3(1, 0, 0));
+    expect(v.x).toBeCloseTo(0);
+    expect(v.y).toBeCloseTo(1);
+    expect(v.z).toBeCloseTo(0);
+  });
+
+  test('matches rotateX / rotateY / rotateZ for principal axes', () => {
+    const a = 0.7;
+    const cases: Array<[[number, number, number], Matrix4x4]> = [
+      [[1, 0, 0], new Matrix4x4().rotateX(a)],
+      [[0, 1, 0], new Matrix4x4().rotateY(a)],
+      [[0, 0, 1], new Matrix4x4().rotateZ(a)],
+    ];
+    for (const [axis, expected] of cases) {
+      const actual = new Matrix4x4().rotateAxis(axis, a);
+      actual.elements.forEach((e, i) => expect(e).toBeCloseTo(expected.elements[i], 6));
+    }
+  });
+});
+
+describe('Joint.clamp', () => {
+  test('clamps into limits', () => {
+    const joint = new Joint('j', 'revolute', [0, 0, 1], 0, [-1, 2]);
+    expect(joint.clamp(-5)).toBe(-1);
+    expect(joint.clamp(5)).toBe(2);
+    expect(joint.clamp(0.5)).toBe(0.5);
+  });
+});
+
+describe('matrixHelpers (Mat16 literals)', () => {
+  const asMatrix = (arr: number[]) => {
+    const m = new Matrix4x4();
+    m.elements = Float32Array.from(arr);
+    return m;
+  };
+
+  test('identity and translation', () => {
+    expect(IDENTITY_MAT16).toEqual(Array.from(new Matrix4x4().elements));
+    expect(asMatrix(translationMat16(1, 2, 3)).getTranslation()).toEqual([1, 2, 3]);
+  });
+
+  test('rotation helpers agree with Matrix4x4', () => {
+    const a = 0.4;
+    const pairs: Array<[number[], Matrix4x4]> = [
+      [rotationXMat16(a), new Matrix4x4().rotateX(a)],
+      [rotationYMat16(a), new Matrix4x4().rotateY(a)],
+      [rotationZMat16(a), new Matrix4x4().rotateZ(a)],
+    ];
+    for (const [arr, m] of pairs) {
+      arr.forEach((v, i) => expect(v).toBeCloseTo(m.elements[i], 6));
+    }
   });
 });

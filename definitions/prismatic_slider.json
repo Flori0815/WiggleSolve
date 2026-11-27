@@ -1,4 +1,6 @@
 {
+  "name": "Prismatic Slider",
+  "description": "Single prismatic X-axis joint converging onto a target (integration fixture).",
   "system": {
     "bodies": [
       {

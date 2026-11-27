@@ -1,17 +1,16 @@
 {
-  "name": "core-js",
+  "name": "@wigglesolve/core",
   "version": "1.0.0",
-  "type": "module",
   "description": "WiggleSolve core math and kinematics engine",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "jest",
     "build": "tsc",
-    "lint": "eslint ."
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json"
   },
-  "keywords": [],
-  "author": "",
   "license": "MIT",
   "dependencies": {
     "zod": "^3.25.76"
@@ -19,11 +18,15 @@
   "devDependencies": {
     "@eslint/js": "^9.39.4",
     "@types/jest": "^30.0.0",
+    "@types/node": "^20.0.0",
     "eslint": "^9.39.4",
     "globals": "^15.15.0",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.62.0"
-  }
+  },
+  "files": [
+    "dist"
+  ]
 }

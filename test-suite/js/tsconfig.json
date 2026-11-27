@@ -5,7 +5,12 @@
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "types": ["jest", "node"]
+    "noEmit": true,
+    "types": ["jest", "node"],
+    "baseUrl": ".",
+    "paths": {
+      "@wigglesolve/core": ["../../core-js/src/index.ts"]
+    }
   },
-  "include": ["./**/*", "../../core-js/src/**/*"]
+  "include": ["./**/*.ts"]
 }

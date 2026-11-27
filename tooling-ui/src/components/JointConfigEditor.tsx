@@ -1,4 +1,9 @@
-import type { UIJointConfig } from '../types';
+import type { AxisName } from '@wigglesolve/core';
+
+export type UIJointConfig = {
+  type: 'revolute' | 'prismatic';
+  axis: AxisName;
+};
 
 type Props = {
   config: UIJointConfig;

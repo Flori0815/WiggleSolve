@@ -1,4 +1,4 @@
-name: Integration Tests
+name: CI
 
 on:
   pull_request:
@@ -7,7 +7,7 @@ on:
   workflow_call:
 
 jobs:
-  integration-tests:
+  checks:
     runs-on: ubuntu-latest
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -36,12 +36,14 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Run JS integration tests
-        run: npm run test -w wigglesolve-integration-js
+      - name: Core unit tests (100% coverage gate)
+        run: npm run test:coverage -w @wigglesolve/core
+
+      - name: JS integration tests
+        run: npm test -w wigglesolve-integration-js
 
       - name: Install Python test dependency
         run: pip install pytest
 
-      - name: Run Python integration tests
-        working-directory: test-suite/py
-        run: pytest -v
+      - name: Python unit and integration tests
+        run: npm run test:py

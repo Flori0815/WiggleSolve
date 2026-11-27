@@ -8,9 +8,12 @@
     "mcp-server"
   ],
   "scripts": {
-    "test:integration": "npm run test -w wigglesolve-integration-js",
+    "dev": "npm run dev -w tooling-ui",
+    "build": "npm run build -w @wigglesolve/core && npm run build -w tooling-ui && npm run build -w wigglesolve-mcp-server",
+    "test": "npm test -w @wigglesolve/core && npm test -w wigglesolve-integration-js",
+    "test:py": "python -m pytest -q core-py/tests test-suite/py",
     "lint": "npm run lint --workspaces --if-present",
-    "typecheck": "npm run typecheck -w tooling-ui"
+    "typecheck": "npm run typecheck --workspaces --if-present"
   },
   "devDependencies": {
     "@types/jest": "^29.5.5",

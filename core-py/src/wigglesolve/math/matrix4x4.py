@@ -94,6 +94,23 @@ class Matrix4x4:
         te[1] = s;  te[5] = c
         return self.multiply(m)
 
+    def rotate_axis(self, axis, theta: float) -> Matrix4x4:
+        """Post-multiplies a rotation about an arbitrary axis (Rodrigues).
+
+        The axis is normalised; a zero-length axis falls back to +Z.
+        """
+        length = math.sqrt(axis[0] ** 2 + axis[1] ** 2 + axis[2] ** 2)
+        x, y, z = (0.0, 0.0, 1.0) if length < 1e-12 else (axis[0] / length, axis[1] / length, axis[2] / length)
+        c = math.cos(theta)
+        s = math.sin(theta)
+        t = 1 - c
+        m = Matrix4x4()
+        te = m.elements
+        te[0] = t*x*x + c;   te[4] = t*x*y - s*z; te[8] = t*x*z + s*y
+        te[1] = t*x*y + s*z; te[5] = t*y*y + c;   te[9] = t*y*z - s*x
+        te[2] = t*x*z - s*y; te[6] = t*y*z + s*x; te[10] = t*z*z + c
+        return self.multiply(m)
+
     def get_translation(self) -> Tuple[float, float, float]:
         te = self.elements
         return (te[12], te[13], te[14])

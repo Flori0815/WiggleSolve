@@ -1,5 +1,5 @@
-import { translationMat16, IDENTITY_MAT16, rotationZMat16, rotationXMat16, rotationYMat16 } from 'core-js';
-import type { DemoDefinition } from 'core-js';
+import { translationMat16, IDENTITY_MAT16, rotationZMat16, rotationXMat16, rotationYMat16 } from '@wigglesolve/core';
+import type { MechanismDefinition } from '@wigglesolve/core';
 
 export type ParameterType = 'number' | 'tuple2' | 'xyz' | 'axis3' | 'boolean';
 
@@ -86,7 +86,7 @@ function resolveTokens(node: unknown, resolvedParams: Record<string, unknown>): 
 export function instantiateTemplate(
   template: KinematicTemplate,
   params: Record<string, unknown>,
-): DemoDefinition {
+): MechanismDefinition {
   const resolved: Record<string, unknown> = {};
   for (const [bindingName, binding] of Object.entries(template.parameterBindings)) {
     const rawValue = params[binding.input];
@@ -100,7 +100,7 @@ export function instantiateTemplate(
   }
 
   const concrete = resolveTokens(template.definition, resolved);
-  return concrete as DemoDefinition;
+  return concrete as MechanismDefinition;
 }
 
 export function getDefaultParams(template: KinematicTemplate): Record<string, unknown> {

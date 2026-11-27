@@ -1,16 +1,16 @@
 import type { ServerResponse } from 'node:http';
-import type { DemoBodyDef, DemoGlobalNodeDef, DemoJointDef, DemoActuatorDef, DemoLoopDef, DemoDefinition } from 'core-js';
+import type { BodyDef, GlobalNodeDef, JointDef, ActuatorDef, LoopDef, MechanismDefinition } from '@wigglesolve/core';
 
 export interface PartialDefinition {
   name: string;
   description: string;
   system: {
-    bodies: DemoBodyDef[];
-    globalNodes: DemoGlobalNodeDef[];
-    joints: DemoJointDef[];
+    bodies: BodyDef[];
+    globalNodes: GlobalNodeDef[];
+    joints: JointDef[];
   };
-  actuators: DemoActuatorDef[];
-  sequence: DemoLoopDef[];
+  actuators: ActuatorDef[];
+  sequence: LoopDef[];
 }
 
 function emptyDefinition(): PartialDefinition {
@@ -81,7 +81,7 @@ export function setByPointer(obj: unknown, pointer: string, value: unknown): voi
   cur[parts[parts.length - 1]] = value;
 }
 
-export function isCompleteDefinition(def: PartialDefinition): def is DemoDefinition {
+export function isCompleteDefinition(def: PartialDefinition): def is MechanismDefinition {
   return (
     def.system.bodies.length > 0 &&
     def.system.joints.length > 0 &&

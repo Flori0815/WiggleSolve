@@ -5,11 +5,11 @@ export type JointType = 'revolute' | 'prismatic' | 'fixed';
 export class Joint {
   public id: string;
   public type: JointType;
-  /** Local axis of rotation or translation */
+  /** Axis of rotation or translation, expressed in the pivot node's frame. */
   public axis: [number, number, number];
-  /** The dynamic value of the joint */
+  /** The dynamic value of the joint (radians or length units). */
   public value: number;
-  /** Lower and upper bounds [min, max] */
+  /** Lower and upper bounds [min, max]. */
   public limits: [number, number];
 
   constructor(
@@ -17,7 +17,7 @@ export class Joint {
     type: JointType = 'revolute',
     axis: [number, number, number] = [0, 0, 1],
     value: number = 0,
-    limits: [number, number] = [-Infinity, Infinity]
+    limits: [number, number] = [-Infinity, Infinity],
   ) {
     this.id = id;
     this.type = type;
@@ -26,22 +26,20 @@ export class Joint {
     this.limits = limits;
   }
 
+  /** Clamps a candidate joint value into the joint's limits. */
+  clamp(value: number): number {
+    return Math.max(this.limits[0], Math.min(this.limits[1], value));
+  }
+
   /**
-   * Generates a 4x4 matrix representing the relative transformation 
-   * caused by this joint's current value.
+   * Local transform produced by moving this joint by `amount`
+   * (defaults to the joint's current value).
    */
-  getTransformMatrix(): Matrix4x4 {
+  getTransformMatrix(amount: number = this.value): Matrix4x4 {
     const m = new Matrix4x4();
     const [ax, ay, az] = this.axis;
-
-    if (this.type === 'revolute') {
-      if (ax === 1) return m.rotateX(this.value);
-      if (ay === 1) return m.rotateY(this.value);
-      if (az === 1) return m.rotateZ(this.value);
-      return m.rotateZ(this.value);
-    } else if (this.type === 'prismatic') {
-      return m.translate(ax * this.value, ay * this.value, az * this.value);
-    }
+    if (this.type === 'revolute') return m.rotateAxis(this.axis, amount);
+    if (this.type === 'prismatic') return m.translate(ax * amount, ay * amount, az * amount);
     return m;
   }
 }

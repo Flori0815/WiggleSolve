@@ -8,8 +8,10 @@ export default defineConfig(({ command }) => ({
   base: command === 'serve' ? '/' : '/WiggleSolve/',
   resolve: {
     alias: {
-      '@demos':        resolve(__dirname, '../demos'),
-      '@definitions':  resolve(__dirname, '../definitions'),
+      // Consume the core as source so edits hot-reload without a separate build.
+      '@wigglesolve/core': resolve(__dirname, '../core-js/src/index.ts'),
+      '@demos':            resolve(__dirname, '../demos'),
+      '@definitions':      resolve(__dirname, '../definitions'),
     },
   },
   server: {

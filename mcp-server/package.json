@@ -4,20 +4,25 @@
   "private": true,
   "main": "dist/index.js",
   "scripts": {
-    "prebuild": "npm run build -w core-js",
+    "prebuild": "npm run build -w @wigglesolve/core",
     "build": "tsc",
     "start": "node dist/index.js",
-    "dev": "npx tsx src/index.ts"
+    "dev": "npx tsx src/index.ts",
+    "typecheck": "tsc --noEmit",
+    "pretypecheck": "npm run build -w @wigglesolve/core",
+    "lint": "eslint ."
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.12.1",
-    "core-js": "file:../core-js",
-    "zod": "^3.25.76",
-    "zod-to-json-schema": "^3.24.5"
+    "@wigglesolve/core": "*"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.4",
     "@types/node": "^20.0.0",
+    "eslint": "^9.39.4",
+    "globals": "^15.15.0",
     "tsx": "^4.19.4",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "typescript-eslint": "^8.62.0"
   }
 }

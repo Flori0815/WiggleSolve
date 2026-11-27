@@ -1,4 +1,4 @@
-import type { Node } from 'core-js/src/index';
+import type { Node } from '@wigglesolve/core';
 
 type Props = {
   node: Node;

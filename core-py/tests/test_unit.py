@@ -419,3 +419,93 @@ class TestJointTransformMatrix:
         assert abs(x - 5) < 1e-10
         assert abs(y) < 1e-10
         assert abs(z) < 1e-10
+
+
+# ── Parity additions (generic axis, removal, LookAt roll, definitions) ─────────
+
+from wigglesolve.definition import build_system, build_sequence  # noqa: E402
+
+
+class TestRotateAxis:
+    def test_negative_axis_rotates_opposite(self):
+        v = Matrix4x4().rotate_axis((0, 0, -1), math.pi / 2).rotate_vector(Vector3(1, 0, 0))
+        assert v.x == pytest.approx(0, abs=1e-9)
+        assert v.y == pytest.approx(-1)
+
+    def test_zero_axis_falls_back_to_z(self):
+        v = Matrix4x4().rotate_axis((0, 0, 0), math.pi / 2).rotate_vector(Vector3(1, 0, 0))
+        assert v.y == pytest.approx(1)
+
+    def test_joint_clamp(self):
+        assert Joint("j", limits=(-1.0, 2.0)).clamp(5) == 2.0
+
+
+class TestRemoval:
+    def test_remove_body_removes_nodes(self):
+        system = KinematicSystem()
+        body = RigidBody("b")
+        body.add_node(Node("n"))
+        system.add_body(body)
+        system.remove_body("b")
+        assert not system.bodies and not system.nodes
+
+    def test_remove_node_detaches(self):
+        system = KinematicSystem()
+        body = RigidBody("b")
+        body.add_node(Node("n"))
+        system.add_body(body)
+        system.remove_node("n")
+        assert not body.nodes and not system.nodes
+
+
+class TestLookAtSecondaryAxis:
+    def test_secondary_axis_points_at_secondary_target(self):
+        system = KinematicSystem()
+        body = RigidBody("b")
+        node = Node("n")
+        body.add_node(node)
+        system.add_body(body)
+        primary = Node("p")
+        primary.absolute_transform = Matrix4x4().translate(1, 0, 0)
+        secondary = Node("s")
+        secondary.absolute_transform = Matrix4x4().translate(0, 0, 1)
+        system.add_node(primary)
+        system.add_node(secondary)
+        node.alignment.primary_axis = "x"
+        node.alignment.primary_target = "p"
+        node.alignment.secondary_axis = "y"
+        node.alignment.secondary_target = "s"
+        system.update_forward_kinematics()
+        system.solve_node_alignment("n")
+        y_dir = node.local_transform.rotate_vector(Vector3(0, 1, 0))
+        assert y_dir.z == pytest.approx(1, abs=1e-6)
+
+
+class TestDefinition:
+    DEF = {
+        'name': 'd', 'description': '',
+        'system': {
+            'bodies': [
+                {'id': 'base', 'nodes': [{'id': 'pivot', 'localTransform': [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1]}]},
+                {'id': 'arm', 'transform': [1,0,0,0, 0,1,0,0, 0,0,1,0, 0,2,0,1],
+                 'nodes': [{'id': 'tip', 'localTransform': [1,0,0,0, 0,1,0,0, 0,0,1,0, 1,0,0,1]}]},
+            ],
+            'joints': [{'id': 'j', 'type': 'revolute', 'axis': [0, 0, 1], 'limits': [-3, 3]}],
+        },
+        'actuators': [{'id': 'j', 'type': 'revolute', 'axis': 'z', 'pivotNode': 'pivot', 'movingBodies': ['arm']}],
+        'sequence': [{
+            'type': 'loop', 'max_iterations': 5,
+            'condition': {'type': 'distance_less_than', 'nodeA': 'tip', 'nodeB': 'tip', 'threshold': 0.1},
+            'steps': [{'type': 'operation', 'operation': {
+                'type': 'align_node', 'effectorNode': 'tip', 'targetNode': 'tip', 'pivotNode': 'pivot',
+                'jointId': 'j', 'movingBodies': ['arm'], 'damping': 0.8}}],
+        }],
+    }
+
+    def test_explicit_body_transform_overrides_assembly(self):
+        system = build_system(self.DEF)
+        assert system.nodes['tip'].absolute_transform.get_translation() == pytest.approx((1, 2, 0))
+
+    def test_sequence_carries_damping(self):
+        loop = build_sequence(self.DEF)[0]
+        assert loop.steps[0].operation.damping == 0.8
