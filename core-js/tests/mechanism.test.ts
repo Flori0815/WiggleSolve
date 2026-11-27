@@ -127,4 +127,14 @@ describe('Mechanism', () => {
     expect(loop.steps).toHaveLength(2);
     expect(m.system.joints.get(a.id)?.limits).toEqual(DEFAULT_DRIVE_RANGE.revolute);
   });
+
+  test('setActuatorLimits writes or creates the joint sharing the actuator id', () => {
+    const m = Mechanism.fromDefinition(demo('three_link_arm.json'));
+    m.setActuatorLimits('j1', [1, -1]);
+    expect(m.getActuatorLimits('j1')).toEqual([-1, 1]);
+    m.addActuator('extra');
+    m.setActuatorLimits('extra', [0, 2]);
+    expect(m.system.joints.get('extra')).toMatchObject({ type: 'revolute', axis: [0, 0, 1], limits: [0, 2] });
+    expect(() => m.setActuatorLimits('ghost', [0, 1])).toThrow('Unknown actuator');
+  });
 });

@@ -89,6 +89,19 @@ export class Mechanism {
     ];
   }
 
+  /**
+   * Sets the drive range of an actuator by writing the limits of the joint that
+   * shares its id (creating that joint if needed).
+   */
+  setActuatorLimits(id: string, limits: [number, number]): void {
+    const actuator = this.getActuator(id);
+    if (!actuator) throw new Error(`Unknown actuator "${id}"`);
+    const ordered: [number, number] = [Math.min(...limits), Math.max(...limits)];
+    const joint = this.system.joints.get(id);
+    if (joint) joint.limits = ordered;
+    else this.system.addJoint(new Joint(id, actuator.type, axisVector(actuator.axis), 0, ordered));
+  }
+
   getActuatorValue(id: string): number {
     return this.driveValues.get(id) ?? 0;
   }

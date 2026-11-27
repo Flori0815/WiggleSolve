@@ -55,8 +55,19 @@ sequence cannot crash a front end.
 
 - **tooling-ui** — React + three.js. `useMechanism` owns the single `Mechanism`
   and a `version` counter; components mutate the mechanism through its API and
-  call `onChange`. The viewport receives derived, render-ready data only.
-  The UI consumes the core as TypeScript source (Vite alias) for hot reload.
+  call `onChange`. The UI consumes the core as TypeScript source (Vite alias)
+  for hot reload. Structure:
+
+  | Folder | Content |
+  |---|---|
+  | `components/common` | Generic building blocks: `Section`, `Card`, fields, id input |
+  | `components/editor` | Edit-mode panels: bodies & nodes, actuators, solver loops |
+  | `components/simulation` | Simulate-mode drive panel |
+  | `components/viewport` | three.js scene: renderer, actuator gizmos, camera framing |
+  | `hooks`, `utils` | `useMechanism`, `useExpanded`, unit formatting |
+
+  The viewport only receives the system and derived `ActuatorView`s; it never
+  mutates the mechanism.
 - **mcp-server** — MCP tools that edit a JSON session and validate/solve it via
   the core. Consumes the compiled core (`core-js/dist`, CommonJS).
 - **test-suite/js** — integration tests over `definitions/` and `demos/`.
