@@ -1,4 +1,6 @@
 {
+  "name": "2-Link Planar Arm",
+  "description": "Two revolute Z-axis joints reaching a fixed planar target (integration fixture).",
   "system": {
     "bodies": [
       {

@@ -16,11 +16,13 @@
     "jsx": "react-jsx",
 
     /* Linting */
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
+      "@wigglesolve/core": ["../core-js/src/index.ts"],
       "@demos/*":       ["../demos/*"],
       "@definitions/*": ["../definitions/*"]
     }

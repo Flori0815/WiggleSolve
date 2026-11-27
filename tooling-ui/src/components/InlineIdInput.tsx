@@ -1,5 +1,11 @@
 import { useRef, useEffect } from 'react';
 
+export type InlineInputState = {
+  isOpen: boolean;
+  value: string;
+  error: string;
+};
+
 type Props = {
   isOpen: boolean;
   value: string;

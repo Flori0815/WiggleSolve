@@ -61,7 +61,7 @@ export function applyOperation(system: KinematicSystem, operation: Operation): v
     if (Math.abs(step) < 1e-8) return;
 
     // Apply limits
-    const newValue = Math.max(joint.limits[0], Math.min(joint.limits[1], joint.value + step));
+    const newValue = joint.clamp(joint.value + step);
     const actualStep = newValue - joint.value;
     if (Math.abs(actualStep) < 1e-8) return;
 

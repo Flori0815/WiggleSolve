@@ -1,12 +1,6 @@
 import { session, setByPointer } from '../session';
-import type { DemoBodyDef, DemoGlobalNodeDef, DemoJointDef, DemoActuatorDef, DemoLoopDef } from 'core-js';
-
-function ok(message: string) {
-  return { content: [{ type: 'text' as const, text: message }] };
-}
-function err(message: string) {
-  return { content: [{ type: 'text' as const, text: message }], isError: true };
-}
+import type { BodyDef, GlobalNodeDef, JointDef, ActuatorDef, LoopDef } from '@wigglesolve/core';
+import { err, ok } from './result';
 
 export function handleSessionNew(args: { name?: string; description?: string }) {
   session.reset(args.name, args.description);
@@ -22,7 +16,7 @@ export function handleAddBody(args: { id: string; nodes: Array<{ id: string; loc
   if (def.system.bodies.find(b => b.id === args.id)) {
     return err(`Body "${args.id}" already exists.`);
   }
-  const body: DemoBodyDef = { id: args.id, nodes: args.nodes };
+  const body: BodyDef = { id: args.id, nodes: args.nodes };
   session.mutate(d => d.system.bodies.push(body));
   return ok(`Added body "${args.id}" with ${args.nodes.length} node(s).`);
 }
@@ -32,7 +26,7 @@ export function handleAddGlobalNode(args: { id: string; absoluteTransform: numbe
   if (def.system.globalNodes.find(n => n.id === args.id)) {
     return err(`Global node "${args.id}" already exists.`);
   }
-  const node: DemoGlobalNodeDef = { id: args.id, absoluteTransform: args.absoluteTransform };
+  const node: GlobalNodeDef = { id: args.id, absoluteTransform: args.absoluteTransform };
   session.mutate(d => d.system.globalNodes.push(node));
   return ok(`Added global node "${args.id}".`);
 }
@@ -47,7 +41,7 @@ export function handleAddJoint(args: {
   if (def.system.joints.find(j => j.id === args.id)) {
     return err(`Joint "${args.id}" already exists.`);
   }
-  const joint: DemoJointDef = { id: args.id, type: args.type, axis: args.axis, limits: args.limits };
+  const joint: JointDef = { id: args.id, type: args.type, axis: args.axis, limits: args.limits };
   session.mutate(d => d.system.joints.push(joint));
   return ok(`Added ${args.type} joint "${args.id}" on axis [${args.axis}], limits [${args.limits}].`);
 }
@@ -63,7 +57,7 @@ export function handleAddActuator(args: {
   if (def.actuators.find(a => a.id === args.id)) {
     return err(`Actuator "${args.id}" already exists.`);
   }
-  const actuator: DemoActuatorDef = {
+  const actuator: ActuatorDef = {
     id: args.id,
     type: args.type,
     axis: args.axis,
@@ -89,7 +83,7 @@ export function handleAddSolveLoop(args: {
     };
   }>;
 }) {
-  const loop: DemoLoopDef = {
+  const loop: LoopDef = {
     type: 'loop',
     max_iterations: args.max_iterations,
     condition: args.condition,

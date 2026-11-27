@@ -1,29 +1,30 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, Grid, Html } from '@react-three/drei';
 import * as THREE from 'three';
-import { KinematicSystem } from 'core-js/src/index';
+import type { AxisName, KinematicSystem } from '@wigglesolve/core';
 
 const BODY_COLORS = [
   '#38bdf8', '#fb923c', '#4ade80', '#f472b6',
   '#a78bfa', '#facc15', '#34d399', '#f87171',
 ];
 
-export type VisualizerActuator = {
+/** Render-ready actuator state (derived from the mechanism by the caller). */
+export type ActuatorView = {
   id: string;
   type: 'revolute' | 'prismatic';
-  axis: 'x' | 'y' | 'z';
+  axis: AxisName;
   pivotNode: string;
   value: number;
+  limits: [number, number];
 };
 
 interface VisualizerProps {
   system: KinematicSystem;
-  version: number;
-  actuators?: Record<string, VisualizerActuator>;
+  actuators?: ActuatorView[];
 }
 
-function axisOrientation(axis: 'x' | 'y' | 'z'): THREE.Quaternion {
+function axisOrientation(axis: AxisName): THREE.Quaternion {
   // Rotate so the disc (default normal = Z) aligns with the given rotation axis
   const q = new THREE.Quaternion();
   if (axis === 'x') q.setFromAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 2);
@@ -35,18 +36,15 @@ const MAX_ARC = 2 * Math.PI;
 
 const ActuatorVisualizer: React.FC<{
   system: KinematicSystem;
-  actuators: Record<string, VisualizerActuator>;
-  version: number;
-}> = ({ system, actuators, version }) => {
-  const elements = useMemo(() => {
+  actuators: ActuatorView[];
+}> = ({ system, actuators }) => {
     const meshes: React.ReactNode[] = [];
 
-    Object.values(actuators).forEach(act => {
+    actuators.forEach(act => {
       const pivotNode = system.nodes.get(act.pivotNode);
       if (!pivotNode) return;
 
-      const joint = system.joints.get(act.id);
-      const rawLimits: [number, number] = joint?.limits ?? [-Math.PI, Math.PI];
+      const rawLimits = act.limits;
       const pivotPos = new THREE.Vector3().setFromMatrixPosition(
         new THREE.Matrix4().fromArray(Array.from(pivotNode.absoluteTransform.elements))
       );
@@ -185,17 +183,12 @@ const ActuatorVisualizer: React.FC<{
       }
     });
 
-    return meshes;
-  }, [system, actuators, version]);
-
-  return <>{elements}</>;
+  return <>{meshes}</>;
 };
 
 const KinematicRenderer: React.FC<{
   system: KinematicSystem;
-  version: number;
-}> = ({ system, version }) => {
-  const elements = useMemo(() => {
+}> = ({ system }) => {
     const meshes: React.ReactNode[] = [];
 
     // 1. Render links — colored cylinders representing each rigid body segment
@@ -304,10 +297,7 @@ const KinematicRenderer: React.FC<{
       );
     });
 
-    return meshes;
-  }, [system, version]);
-
-  return <>{elements}</>;
+  return <>{meshes}</>;
 };
 
 const Legend: React.FC = () => (
@@ -328,7 +318,7 @@ const Legend: React.FC = () => (
   </div>
 );
 
-export const Visualizer: React.FC<VisualizerProps> = ({ system, version, actuators = {} }) => {
+export const Visualizer: React.FC<VisualizerProps> = ({ system, actuators = [] }) => {
   return (
     <div
       style={{ width: '100%', height: '100%', background: '#111', position: 'relative' }}
@@ -340,8 +330,8 @@ export const Visualizer: React.FC<VisualizerProps> = ({ system, version, actuato
         <color attach="background" args={['#08060d']} />
         <ambientLight intensity={1.5} />
         <pointLight position={[10, 10, 10]} intensity={1} />
-        <KinematicRenderer system={system} version={version} />
-        <ActuatorVisualizer system={system} actuators={actuators} version={version} />
+        <KinematicRenderer system={system} />
+        <ActuatorVisualizer system={system} actuators={actuators} />
         <Grid infiniteGrid fadeDistance={20} cellColor="#222" sectionColor="#333" />
         <OrbitControls makeDefault target={[1.5, 0, 0]} />
       </Canvas>

@@ -1,9 +1,9 @@
 from __future__ import annotations
 import math
-from dataclasses import dataclass, field
-from typing import List, Literal
+from dataclasses import dataclass
+from typing import List, Literal, Optional
 from wigglesolve.math.vector3 import Vector3
-from wigglesolve.math.matrix4x4 import Matrix4x4
+from wigglesolve.system.kinematic_system import apply_joint_delta
 
 
 @dataclass
@@ -14,6 +14,7 @@ class Operation:
     pivot_node: str
     joint_id: str
     moving_bodies: List[str]
+    damping: Optional[float] = None
 
 
 def apply_operation(system, operation: Operation) -> None:
@@ -35,6 +36,7 @@ def apply_operation(system, operation: Operation) -> None:
         ).normalize()
 
         step = 0.0
+        damping = 0.5 if operation.damping is None else operation.damping
 
         if joint.type == "revolute":
             p_to_e = e_pos.sub(p_pos)
@@ -54,43 +56,24 @@ def apply_operation(system, operation: Operation) -> None:
 
             cross = p_to_en.cross(p_to_tn).normalize()
             projection = cross.dot(world_axis)
-            step = angle * projection * 0.5
+            step = angle * projection * damping
 
         elif joint.type == "prismatic":
             e_to_t = t_pos.sub(e_pos)
-            step = e_to_t.dot(world_axis) * 0.5
+            step = e_to_t.dot(world_axis) * damping
 
         if abs(step) < 1e-8:
             return
 
-        new_value = max(joint.limits[0], min(joint.limits[1], joint.value + step))
+        new_value = joint.clamp(joint.value + step)
         actual_step = new_value - joint.value
         if abs(actual_step) < 1e-8:
             return
 
         joint.value = new_value
 
-        local_step_mat = Matrix4x4()
-        ax, ay, az = joint.axis
-        if joint.type == "revolute":
-            if ax == 1:
-                local_step_mat = local_step_mat.rotate_x(actual_step)
-            elif ay == 1:
-                local_step_mat = local_step_mat.rotate_y(actual_step)
-            else:
-                local_step_mat = local_step_mat.rotate_z(actual_step)
-        else:
-            local_step_mat = local_step_mat.translate(ax * actual_step, ay * actual_step, az * actual_step)
-
-        pivot_inv = pivot.absolute_transform.invert()
-        delta_t = pivot.absolute_transform.multiply(local_step_mat).multiply(pivot_inv)
-
-        for body_id in operation.moving_bodies:
-            body = system.bodies.get(body_id)
-            if body:
-                body.transform = delta_t.multiply(body.transform)
-                body.update_nodes()
-
+        bodies = [system.bodies[b] for b in operation.moving_bodies if b in system.bodies]
+        apply_joint_delta(joint, pivot, bodies, actual_step)
         return
 
     raise ValueError(f"Unsupported operation type: {operation.type}")

@@ -1,20 +1,17 @@
-import { Joint, KinematicSystem } from 'core-js/src/index';
-import type { Instruction, Operation } from 'core-js/src/index';
+import { axisName, axisVector } from '@wigglesolve/core';
+import type { Instruction, Mechanism } from '@wigglesolve/core';
 import { JointConfigEditor } from './JointConfigEditor';
-import type { UIJointConfig } from '../types';
-
-type OperationWithUIConfig = Operation & { config?: UIJointConfig };
 
 type Props = {
   instr: Instruction;
+  mechanism: Mechanism;
   onUpdate: () => void;
   onDelete: () => void;
   allNodes: string[];
   allBodies: string[];
-  system: KinematicSystem;
 };
 
-export const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies, system }: Props) => {
+export const InstructionItem = ({ instr, mechanism, onUpdate, onDelete, allNodes, allBodies }: Props) => {
   if (instr.type === 'loop') {
     return (
       <div className="sequence-item loop">
@@ -32,9 +29,14 @@ export const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies
             />
           </div>
           <div className="condition-box">
-            <span className="tiny">Target Node:</span>
+            <span className="tiny">Until</span>
+            <select value={instr.condition.nodeA} onChange={e => { instr.condition.nodeA = e.target.value; onUpdate(); }}>
+              <option value="">Node A...</option>
+              {allNodes.map(id => <option key={id} value={id}>{id}</option>)}
+            </select>
+            <span className="tiny">reaches</span>
             <select value={instr.condition.nodeB} onChange={e => { instr.condition.nodeB = e.target.value; onUpdate(); }}>
-              <option value="">Select...</option>
+              <option value="">Node B...</option>
               {allNodes.map(id => <option key={id} value={id}>{id}</option>)}
             </select>
           </div>
@@ -44,28 +46,15 @@ export const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies
             <InstructionItem
               key={`step-${i}`}
               instr={s}
+              mechanism={mechanism}
               onUpdate={onUpdate}
               onDelete={() => { instr.steps.splice(i, 1); onUpdate(); }}
               allNodes={allNodes}
               allBodies={allBodies}
-              system={system}
             />
           ))}
           <div className="add-nested-row">
-            <button className="add-nested-btn" onClick={() => {
-              instr.steps.push({
-                type: 'operation',
-                operation: {
-                  type: 'align_node',
-                  effectorNode: '',
-                  targetNode: '',
-                  pivotNode: '',
-                  jointId: `j${Math.random().toString(36).substr(2, 4)}`,
-                  movingBodies: [],
-                },
-              });
-              onUpdate();
-            }}>+ Align</button>
+            <button className="add-nested-btn" onClick={() => { mechanism.addAlignStep(instr); onUpdate(); }}>+ Align</button>
           </div>
         </div>
       </div>
@@ -73,32 +62,27 @@ export const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies
   }
 
   const op = instr.operation;
-  const opWithConfig = op as OperationWithUIConfig;
-  let joint = system.joints.get(op.jointId);
-  if (!joint) { joint = new Joint(op.jointId); system.addJoint(joint); }
-  if (!opWithConfig.config) {
-    const axisStr: 'x' | 'y' | 'z' = joint.axis[0] === 1 ? 'x' : (joint.axis[1] === 1 ? 'y' : 'z');
-    opWithConfig.config = { type: joint.type, axis: axisStr };
-  }
-  const uiConfig = opWithConfig.config as UIJointConfig;
+  const joint = mechanism.system.joints.get(op.jointId);
 
   return (
     <div className="sequence-item op">
       <div className="item-row">
-        <span className="bold">ALIGN</span>
+        <span className="bold">ALIGN · {op.jointId}</span>
         <button className="del-btn" aria-label="Delete align instruction" onClick={onDelete}>×</button>
       </div>
       <div className="op-form">
-        <JointConfigEditor
-          config={uiConfig}
-          onChange={update => {
-            Object.assign(uiConfig, update);
-            const coreAxis: [number, number, number] = uiConfig.axis === 'x' ? [1, 0, 0] : (uiConfig.axis === 'y' ? [0, 1, 0] : [0, 0, 1]);
-            joint!.type = uiConfig.type;
-            joint!.axis = coreAxis;
-            onUpdate();
-          }}
-        />
+        {joint && joint.type !== 'fixed' ? (
+          <JointConfigEditor
+            config={{ type: joint.type, axis: axisName(joint.axis) }}
+            onChange={update => {
+              if (update.type) joint.type = update.type;
+              if (update.axis) joint.axis = axisVector(update.axis);
+              onUpdate();
+            }}
+          />
+        ) : (
+          <p className="empty-state">Joint '{op.jointId}' is not defined.</p>
+        )}
         <div className="align-row">
           <select value={op.effectorNode} onChange={e => { op.effectorNode = e.target.value; onUpdate(); }}>
             <option value="">Effector...</option>
@@ -122,8 +106,7 @@ export const InstructionItem = ({ instr, onUpdate, onDelete, allNodes, allBodies
                 type="checkbox"
                 checked={op.movingBodies.includes(id)}
                 onChange={e => {
-                  if (e.target.checked) op.movingBodies.push(id);
-                  else op.movingBodies = op.movingBodies.filter((v: string) => v !== id);
+                  op.movingBodies = e.target.checked ? [...op.movingBodies, id] : op.movingBodies.filter(v => v !== id);
                   onUpdate();
                 }}
               />

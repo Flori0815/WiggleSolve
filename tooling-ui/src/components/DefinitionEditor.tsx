@@ -1,16 +1,18 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Node, RigidBody, KinematicSystem } from 'core-js/src/index';
+import { useState, useCallback } from 'react';
+import { Node, RigidBody } from '@wigglesolve/core';
+import type { Mechanism } from '@wigglesolve/core';
 import { InlineIdInput } from './InlineIdInput';
+import type { InlineInputState } from './InlineIdInput';
 import { NodeEditor } from './NodeEditor';
-import type { InlineInputState } from '../types';
 
 type Props = {
-  system: KinematicSystem;
-  version: number;
-  tick: () => void;
+  mechanism: Mechanism;
+  /** Call after mutating the mechanism. */
+  onChange: () => void;
 };
 
-export const DefinitionEditor = ({ system, version, tick }: Props) => {
+export const DefinitionEditor = ({ mechanism, onChange: tick }: Props) => {
+  const { system } = mechanism;
   const [collapsedItems, setCollapsedItems] = useState<Set<string>>(new Set());
   const [globalNodeInput, setGlobalNodeInput] = useState<InlineInputState>({ isOpen: false, value: '', error: '' });
   const [bodyInput, setBodyInput] = useState<InlineInputState>({ isOpen: false, value: '', error: '' });
@@ -18,8 +20,8 @@ export const DefinitionEditor = ({ system, version, tick }: Props) => {
     isOpen: false, value: '', error: '', bodyId: undefined,
   });
 
-  const allNodeIds = useMemo(() => Array.from(system.nodes.keys()), [system.nodes.size, version]);
-  const allBodyIds = useMemo(() => Array.from(system.bodies.keys()), [system.bodies.size, version]);
+  const allNodeIds = [...system.nodes.keys()];
+  const allBodyIds = [...system.bodies.keys()];
 
   const toggleCollapsed = useCallback((id: string) => {
     setCollapsedItems(prev => {
@@ -30,30 +32,30 @@ export const DefinitionEditor = ({ system, version, tick }: Props) => {
   }, []);
 
   const addGlobalNode = useCallback((id: string) => {
-    if (!id.trim()) { setGlobalNodeInput(s => ({ ...s, error: 'ID cannot be empty' })); return; }
-    if (system.nodes.has(id)) { setGlobalNodeInput(s => ({ ...s, error: `Node '${id}' already exists` })); return; }
+    const error = mechanism.validateNewId('node', id);
+    if (error) { setGlobalNodeInput(s => ({ ...s, error })); return; }
     system.addNode(new Node(id));
     setGlobalNodeInput({ isOpen: false, value: '', error: '' });
     tick();
-  }, [system, tick]);
+  }, [mechanism, system, tick]);
 
   const addBody = useCallback((id: string) => {
-    if (!id.trim()) { setBodyInput(s => ({ ...s, error: 'ID cannot be empty' })); return; }
-    if (system.bodies.has(id)) { setBodyInput(s => ({ ...s, error: `Body '${id}' already exists` })); return; }
+    const error = mechanism.validateNewId('body', id);
+    if (error) { setBodyInput(s => ({ ...s, error })); return; }
     system.addBody(new RigidBody(id));
     setBodyInput({ isOpen: false, value: '', error: '' });
     tick();
-  }, [system, tick]);
+  }, [mechanism, system, tick]);
 
   const addBodyNode = useCallback((bodyId: string, id: string) => {
-    if (!id.trim()) { setBodyNodeInput(s => ({ ...s, error: 'ID cannot be empty' })); return; }
-    if (system.nodes.has(id)) { setBodyNodeInput(s => ({ ...s, error: `Node '${id}' already exists` })); return; }
+    const error = mechanism.validateNewId('node', id);
+    if (error) { setBodyNodeInput(s => ({ ...s, error })); return; }
     system.addNode(new Node(id), bodyId);
     setBodyNodeInput({ isOpen: false, value: '', error: '', bodyId: undefined });
     tick();
-  }, [system, tick]);
+  }, [mechanism, system, tick]);
 
-  const globalNodeIds = allNodeIds.filter(id => !allBodyIds.some(bid => system.bodies.get(bid)!.nodes.has(id)));
+  const globalNodeIds = allNodeIds.filter(id => !system.findBodyOfNode(id));
 
   return (
     <div className="elements-tab">
@@ -86,7 +88,7 @@ export const DefinitionEditor = ({ system, version, tick }: Props) => {
             isGlobal
             collapsed={collapsedItems.has(id)}
             onToggleCollapse={() => toggleCollapsed(id)}
-            onDelete={() => { system.nodes.delete(id); tick(); }}
+            onDelete={() => { system.removeNode(id); tick(); }}
             onUpdate={tick}
             allNodes={allNodeIds}
           />
@@ -121,7 +123,7 @@ export const DefinitionEditor = ({ system, version, tick }: Props) => {
             <div key={id} className="item">
               <div className="item-row clickable" onClick={() => toggleCollapsed(id)}>
                 <span className="bold">{collapsedItems.has(id) ? '▶' : '▼'} {id}</span>
-                <button className="del-btn" aria-label={`Delete body ${id}`} onClick={e => { e.stopPropagation(); system.bodies.delete(id); tick(); }}>×</button>
+                <button className="del-btn" aria-label={`Delete body ${id}`} onClick={e => { e.stopPropagation(); system.removeBody(id); tick(); }}>×</button>
               </div>
               {!collapsedItems.has(id) && (
                 <div className="item-details">
@@ -166,7 +168,7 @@ export const DefinitionEditor = ({ system, version, tick }: Props) => {
                         node={n}
                         collapsed={collapsedItems.has(n.id)}
                         onToggleCollapse={() => toggleCollapsed(n.id)}
-                        onDelete={() => { b.nodes.delete(n.id); system.nodes.delete(n.id); tick(); }}
+                        onDelete={() => { system.removeNode(n.id); tick(); }}
                         onUpdate={tick}
                         allNodes={allNodeIds}
                       />

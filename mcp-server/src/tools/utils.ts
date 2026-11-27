@@ -1,9 +1,6 @@
-import { translationMat16, IDENTITY_MAT16, rotationZMat16, rotationXMat16, rotationYMat16 } from 'core-js';
+import { translationMat16, IDENTITY_MAT16, rotationZMat16, rotationXMat16, rotationYMat16 } from '@wigglesolve/core';
 import { session } from '../session';
-
-function ok(message: string) {
-  return { content: [{ type: 'text' as const, text: message }] };
-}
+import { ok } from './result';
 
 export function handleMatrixTranslation(args: { x: number; y: number; z: number }) {
   return ok(JSON.stringify(translationMat16(args.x, args.y, args.z)));

@@ -2,13 +2,7 @@ import { session } from '../session';
 import { instantiateTemplate, getDefaultParams } from '../instantiator';
 import { listTemplates, getTemplate, saveTemplate, deleteTemplate } from '../templateStore';
 import type { ParameterSpec, ParameterBinding } from '../instantiator';
-
-function ok(message: string) {
-  return { content: [{ type: 'text' as const, text: message }] };
-}
-function err(message: string) {
-  return { content: [{ type: 'text' as const, text: message }], isError: true };
-}
+import { err, ok } from './result';
 
 export function handleListTemplates() {
   const templates = listTemplates();

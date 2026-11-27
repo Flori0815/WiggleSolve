@@ -37,9 +37,7 @@ jobs:
         run: npm ci
 
       - name: Build
-        run: |
-          npm run build -w core-js
-          npm run build -w tooling-ui
+        run: npm run build -w tooling-ui
 
       - name: Setup Pages
         uses: actions/configure-pages@v4

@@ -4,6 +4,7 @@ import { RigidBody } from '../elements/RigidBody';
 import { Vector3 } from '../math/Vector3';
 import { Matrix4x4 } from '../math/Matrix4x4';
 import { applyJointDelta } from './utils';
+import { axisVector } from '../math/axis';
 
 export class KinematicSystem {
   public bodies: Map<string, RigidBody> = new Map();
@@ -29,6 +30,35 @@ export class KinematicSystem {
     this.joints.set(joint.id, joint);
   }
 
+  /** Removes a body together with all nodes attached to it. */
+  removeBody(bodyId: string): void {
+    const body = this.bodies.get(bodyId);
+    if (!body) return;
+    for (const nodeId of body.nodes.keys()) this.nodes.delete(nodeId);
+    this.bodies.delete(bodyId);
+  }
+
+  /** Removes a node, detaching it from its owning body if it has one. */
+  removeNode(nodeId: string): void {
+    this.findBodyOfNode(nodeId)?.nodes.delete(nodeId);
+    this.nodes.delete(nodeId);
+  }
+
+  /** Removes every body, node and joint. */
+  clear(): void {
+    this.bodies.clear();
+    this.nodes.clear();
+    this.joints.clear();
+  }
+
+  /** Returns the body a node is attached to, or undefined for global nodes. */
+  findBodyOfNode(nodeId: string): RigidBody | undefined {
+    for (const body of this.bodies.values()) {
+      if (body.nodes.has(nodeId)) return body;
+    }
+    return undefined;
+  }
+
   updateForwardKinematics(): void {
     for (const body of this.bodies.values()) {
       body.updateNodes();
@@ -46,14 +76,7 @@ export class KinematicSystem {
     const targetNode = this.nodes.get(node.alignment.primaryTarget);
     if (!targetNode) return;
 
-    // Find parent body transform
-    let parentTransform = new Matrix4x4();
-    for (const body of this.bodies.values()) {
-      if (body.nodes.has(node.id)) {
-        parentTransform = body.transform.clone();
-        break;
-      }
-    }
+    const parentTransform = this.findBodyOfNode(node.id)?.transform.clone() ?? new Matrix4x4();
 
     const myPos = new Vector3(...node.absoluteTransform.getTranslation());
     const targetPos = new Vector3(...targetNode.absoluteTransform.getTranslation());
@@ -103,9 +126,7 @@ export class KinematicSystem {
           if (secProj.length() > 1e-6) {
             const secPerpNorm = secProj.normalize();
             // Where does the secondary axis currently point after the primary lookAt?
-            const secAxisVec = secAxis === 'x' ? new Vector3(1, 0, 0)
-                             : secAxis === 'y' ? new Vector3(0, 1, 0)
-                             : new Vector3(0, 0, 1);
+            const secAxisVec = new Vector3(...axisVector(secAxis));
             const curSecDir = lookAtMat.rotateVector(secAxisVec);
             const curProj = curSecDir.sub(z.scale(curSecDir.dot(z)));
             if (curProj.length() > 1e-6) {
@@ -114,21 +135,7 @@ export class KinematicSystem {
               const cosTheta = Math.max(-1, Math.min(1, curPerpNorm.dot(secPerpNorm)));
               const sinTheta = curPerpNorm.cross(secPerpNorm).dot(z);
               const theta = Math.atan2(sinTheta, cosTheta);
-              // Rodrigues rotation matrix around z (primary direction in parent space) by theta
-              const c = Math.cos(theta);
-              const s = Math.sin(theta);
-              const nx = z.x, ny = z.y, nz = z.z;
-              const R2 = new Matrix4x4();
-              const r2e = R2.elements;
-              r2e[0]  = c + (1 - c) * nx * nx;
-              r2e[1]  = (1 - c) * nx * ny + s * nz;
-              r2e[2]  = (1 - c) * nx * nz - s * ny;
-              r2e[4]  = (1 - c) * nx * ny - s * nz;
-              r2e[5]  = c + (1 - c) * ny * ny;
-              r2e[6]  = (1 - c) * ny * nz + s * nx;
-              r2e[8]  = (1 - c) * nx * nz + s * ny;
-              r2e[9]  = (1 - c) * ny * nz - s * nx;
-              r2e[10] = c + (1 - c) * nz * nz;
+              const R2 = new Matrix4x4().rotateAxis([z.x, z.y, z.z], theta);
               lookAtMat = R2.multiply(lookAtMat);
             }
           }

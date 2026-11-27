@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import type { DemoDefinition } from '../schema';
 
 interface Props {
-  onDefinitionReceived: (def: DemoDefinition) => void;
+  /** Receives raw definition JSON pushed by the MCP session bridge. */
+  onDefinitionReceived: (def: unknown) => void;
 }
 
 type Status = 'disconnected' | 'connecting' | 'connected' | 'error';
@@ -26,10 +26,10 @@ export function LiveSession({ onDefinitionReceived }: Props) {
 
     es.onmessage = (e) => {
       try {
-        const def = JSON.parse(e.data) as Partial<DemoDefinition>;
+        const def = JSON.parse(e.data) as { name?: string; system?: { bodies?: unknown[] } };
         if (def?.system?.bodies?.length) {
           setSessionName(def.name ?? '');
-          onDefinitionReceived(def as DemoDefinition);
+          onDefinitionReceived(def);
         } else {
           setSessionName(def.name ?? '');
         }
