@@ -44,7 +44,7 @@ function App() {
   const [selectedDemo, setSelectedDemo] = useState(DEFAULT_DEMO_ID);
   const {
     mechanism, loadCount, mode, status, loadError,
-    dismissLoadError, reportLoadError, onChange, load, switchMode, drive,
+    dismissLoadError, reportLoadError, onChange, load, switchMode, drive, driveGroup,
   } = useMechanism();
 
   const selectDemo = useCallback((id: string) => {
@@ -116,7 +116,7 @@ function App() {
           {mode === 'simulate' ? (
             <>
               <StatusBanner status={status} />
-              <DrivePanel mechanism={mechanism} onDrive={drive} />
+              <DrivePanel mechanism={mechanism} onDrive={drive} onDriveGroup={driveGroup} />
             </>
           ) : (
             <>

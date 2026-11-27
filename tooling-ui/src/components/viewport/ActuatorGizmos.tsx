@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { AxisName, KinematicSystem } from '@wigglesolve/core';
 import { formatValue } from '../../utils/format';
-import { positionOf } from './scene';
+
 import { Label } from './Label';
 
 /** Render-ready actuator state (derived from the mechanism by the caller). */
@@ -29,46 +29,56 @@ const line = (points: THREE.Vector3[], color: string, key: string) => (
   </line>
 );
 
-/** Range arcs / tracks with the current value for every actuator. */
-export const ActuatorGizmos = ({ system, actuators, size, showLabels }: Props) => (
-  <>
-    {actuators.map(act => {
-      const pivot = system.nodes.get(act.pivotNode);
-      if (!pivot) return null;
-      const [lo, hi] = act.limits;
-      const label = showLabels && (
-        <Label color="#f59e0b" offset="side">{act.id} · {formatValue(act.type, act.value)}</Label>
-      );
+/** Gizmos are drawn in the pivot node's frame, where the actuator axis is defined. */
+const frameOf = (pivot: { absoluteTransform: { elements: Float32Array } }) =>
+  new THREE.Matrix4().fromArray(Array.from(pivot.absoluteTransform.elements));
 
-      if (act.type === 'revolute') {
-        const r = size * 0.09;
-        const radial = (angle: number, len: number) => new THREE.Vector3(Math.cos(angle) * len, Math.sin(angle) * len, 0);
-        const orientation = new THREE.Quaternion().setFromUnitVectors(AXIS_DIR.z, AXIS_DIR[act.axis]);
+/** Range arcs / tracks with the current value for every actuator. */
+export const ActuatorGizmos = ({ system, actuators, size: modelSize, showLabels }: Props) => {
+  // Keep gizmos readable when a model has many actuators.
+  const size = modelSize / Math.max(1, Math.sqrt(actuators.length / 3));
+  return (
+    <>
+      {actuators.map(act => {
+        const pivot = system.nodes.get(act.pivotNode);
+        if (!pivot) return null;
+        const [lo, hi] = act.limits;
+        const label = showLabels && (
+          <Label color="#f59e0b" offset="side">{act.id} · {formatValue(act.type, act.value)}</Label>
+        );
+
+        if (act.type === 'revolute') {
+          const r = size * 0.09;
+          const radial = (angle: number, len: number) => new THREE.Vector3(Math.cos(angle) * len, Math.sin(angle) * len, 0);
+          const orientation = new THREE.Quaternion().setFromUnitVectors(AXIS_DIR.z, AXIS_DIR[act.axis]);
+          return (
+            <group key={act.id} matrix={frameOf(pivot)} matrixAutoUpdate={false}>
+              <group quaternion={orientation}>
+                <mesh>
+                  <ringGeometry args={[r * 0.9, r * 1.1, 64, 1, lo, hi - lo]} />
+                  <meshBasicMaterial color="#f59e0b" transparent opacity={0.3} side={THREE.DoubleSide} />
+                </mesh>
+                {line([new THREE.Vector3(), radial(lo, r * 1.2)], '#f59e0b', 'min')}
+                {line([new THREE.Vector3(), radial(hi, r * 1.2)], '#f59e0b', 'max')}
+                {line([new THREE.Vector3(), radial(act.value, r * 1.35)], '#22c55e', 'value')}
+                {label}
+              </group>
+            </group>
+          );
+        }
+
+        const dir = AXIS_DIR[act.axis];
         return (
-          <group key={act.id} position={positionOf(pivot.absoluteTransform)} quaternion={orientation}>
-            <mesh>
-              <ringGeometry args={[r * 0.9, r * 1.1, 64, 1, lo, hi - lo]} />
-              <meshBasicMaterial color="#f59e0b" transparent opacity={0.3} side={THREE.DoubleSide} />
+          <group key={act.id} matrix={frameOf(pivot)} matrixAutoUpdate={false}>
+            {line([dir.clone().multiplyScalar(lo), dir.clone().multiplyScalar(hi)], '#f59e0b', 'track')}
+            <mesh position={dir.clone().multiplyScalar(act.value)}>
+              <sphereGeometry args={[size * 0.025, 10, 10]} />
+              <meshStandardMaterial color="#22c55e" emissive="#166534" emissiveIntensity={0.7} />
             </mesh>
-            {line([new THREE.Vector3(), radial(lo, r * 1.2)], '#f59e0b', 'min')}
-            {line([new THREE.Vector3(), radial(hi, r * 1.2)], '#f59e0b', 'max')}
-            {line([new THREE.Vector3(), radial(act.value, r * 1.35)], '#22c55e', 'value')}
             {label}
           </group>
         );
-      }
-
-      const dir = AXIS_DIR[act.axis];
-      return (
-        <group key={act.id} position={positionOf(pivot.absoluteTransform)}>
-          {line([dir.clone().multiplyScalar(lo), dir.clone().multiplyScalar(hi)], '#f59e0b', 'track')}
-          <mesh position={dir.clone().multiplyScalar(act.value)}>
-            <sphereGeometry args={[size * 0.025, 10, 10]} />
-            <meshStandardMaterial color="#22c55e" emissive="#166534" emissiveIntensity={0.7} />
-          </mesh>
-          {label}
-        </group>
-      );
-    })}
-  </>
-);
+      })}
+    </>
+  );
+};

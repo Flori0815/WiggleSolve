@@ -254,6 +254,19 @@ fieldset { margin: 0; padding: 0; border: none; min-width: 0; }
 .drive-header .number-field .field-label { display: none; }
 .drive-scale { display: flex; justify-content: space-between; font-size: var(--text-xs); color: var(--text-muted); }
 
+
+.drive-group {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--mode);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  margin-bottom: 8px;
+}
+.drive-group details { margin-top: 4px; }
+.drive-group summary { cursor: pointer; padding: 4px 0; }
+.drive-group .drive { margin: 6px 0 0; }
+
 /* ── Live session ───────────────────────────────────────────────────────── */
 
 .live-session summary {

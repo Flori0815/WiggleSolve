@@ -72,8 +72,15 @@ export function useMechanism() {
     bump();
   }, [mechanism, bump]);
 
+  /** Moves a whole actuator group to a fraction of its travel (simulation mode only). */
+  const driveGroup = useCallback((group: string, fraction: number) => {
+    if (!mechanism.isSimulating) return;
+    setStatus(toStatus(mechanism.driveGroup(group, fraction)));
+    bump();
+  }, [mechanism, bump]);
+
   const dismissLoadError = useCallback(() => setLoadError(null), []);
   const reportLoadError = useCallback((message: string) => setLoadError(message), []);
 
-  return { mechanism, version, loadCount, mode, status, loadError, dismissLoadError, reportLoadError, onChange, load, switchMode, drive };
+  return { mechanism, version, loadCount, mode, status, loadError, dismissLoadError, reportLoadError, onChange, load, switchMode, drive, driveGroup };
 }

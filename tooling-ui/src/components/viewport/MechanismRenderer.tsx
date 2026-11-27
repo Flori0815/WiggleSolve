@@ -65,9 +65,10 @@ export const MechanismRenderer = ({ system, size, showLabels, showNodeLabels, sh
     }
   });
 
+  // Node markers shrink as models grow so they never hide the geometry.
+  const r = size * 0.02 / Math.max(1, Math.sqrt(system.nodes.size / 10));
   system.nodes.forEach(node => {
     const matrix = new THREE.Matrix4().fromArray(Array.from(node.absoluteTransform.elements));
-    const r = size * 0.02;
     items.push(
       <group key={`node-${node.id}`} matrix={matrix} matrixAutoUpdate={false}>
         <mesh>

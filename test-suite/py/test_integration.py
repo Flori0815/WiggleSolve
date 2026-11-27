@@ -170,3 +170,26 @@ class TestDroppedHingeFlap:
         lever_end = system.nodes['lever_2_end'].absolute_transform.get_translation()
         hinge = system.nodes['hinge_2'].absolute_transform.get_translation()
         assert _dist(lever_end, hinge) < 1e-4
+
+
+class TestWidebodyWing:
+    """Generated 787-class wing: every surface deploys through the Python port as well."""
+
+    def test_all_surfaces_deploy(self):
+        from wigglesolve.definition import build_sequence, build_system, drive_actuator, load_definition_file
+        from wigglesolve.solver.executor import Executor
+
+        definition = load_definition_file(DEMOS_DIR / 'widebody_wing.json')
+        system = build_system(definition)
+        sequence = build_sequence(definition)
+        joints = {j['id']: j for j in definition['system']['joints']}
+        steps = 20
+        for _ in range(steps):
+            for actuator in definition['actuators']:
+                lo, hi = joints[actuator['id']]['limits']
+                target = lo + 0.8 * (hi - lo)  # 80 % of the travel, starting from 0
+                drive_actuator(system, actuator, target / steps)
+            assert Executor(system).execute(sequence)
+        # Spoilers raised, flaps down.
+        assert system.joints['spoiler1_hinge_rot'].value > math.radians(30)
+        assert system.joints['ibflap_hinge_1_z'].value < math.radians(-30)

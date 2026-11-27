@@ -199,10 +199,73 @@ export class Mechanism {
     });
   }
 
+  // ── Drive groups ─────────────────────────────────────────────────────────
+
+  /** Actuator groups in order of first appearance, with their member ids. */
+  actuatorGroups(): Array<{ group: string; actuators: string[] }> {
+    const groups = new Map<string, string[]>();
+    for (const a of this.actuators) {
+      if (a.group) groups.set(a.group, [...(groups.get(a.group) ?? []), a.id]);
+    }
+    return [...groups].map(([group, actuators]) => ({ group, actuators }));
+  }
+
+  private groupMembers(group: string): ActuatorDef[] {
+    return this.actuators.filter(a => a.group === group);
+  }
+
+  /** Mean position of a group's actuators as a fraction (0–1) of their travel. */
+  getGroupFraction(group: string): number {
+    const members = this.groupMembers(group);
+    if (members.length === 0) return 0;
+    const fractions = members.map(a => {
+      const [lo, hi] = this.getActuatorLimits(a.id);
+      return hi > lo ? (this.getActuatorValue(a.id) - lo) / (hi - lo) : 0;
+    });
+    return fractions.reduce((sum, f) => sum + f, 0) / fractions.length;
+  }
+
+  /**
+   * Moves every actuator of a group to `fraction` (0–1) of its own travel and
+   * solves once.
+   */
+  driveGroup(group: string, fraction: number): SolveResult {
+    const f = Math.max(0, Math.min(1, fraction));
+    const targets = new Map(this.groupMembers(group).map(a => {
+      const [lo, hi] = this.getActuatorLimits(a.id);
+      return [a.id, lo + f * (hi - lo)];
+    }));
+    return this.driveTo(targets);
+  }
+
   /** Sets an actuator and re-solves the dependent constraints. */
   drive(id: string, value: number): SolveResult {
-    this.setActuatorValue(id, value);
-    return this.solve();
+    return this.driveTo(new Map([[id, value]]));
+  }
+
+  /**
+   * Largest actuator move (fraction of its travel) solved in one go. Larger
+   * moves are followed in steps, as a real drive would, so closed loops stay
+   * on their assembly branch.
+   */
+  static readonly MAX_STEP_FRACTION = 0.05;
+
+  private driveTo(targets: Map<string, number>): SolveResult {
+    let steps = 1;
+    const plan = [...targets].map(([id, target]) => {
+      const [lo, hi] = this.getActuatorLimits(id);
+      const from = this.getActuatorValue(id);
+      const to = Math.max(lo, Math.min(hi, target));
+      if (hi > lo) steps = Math.max(steps, Math.ceil(Math.abs(to - from) / ((hi - lo) * Mechanism.MAX_STEP_FRACTION)));
+      return { id, from, to };
+    });
+    let result: SolveResult = { converged: true };
+    for (let k = 1; k <= steps; k++) {
+      for (const { id, from, to } of plan) this.setActuatorValue(id, from + (to - from) * k / steps);
+      result = this.solve();
+      if (result.error) return result;
+    }
+    return result;
   }
 
   // ── Definition ↔ simulation ──────────────────────────────────────────────
