@@ -54,19 +54,41 @@ export const ActuatorDefSchema = z.object({
   axis: Axis,
   pivotNode: z.string(),
   movingBodies: z.array(z.string()),
+  /**
+   * Further outputs driven by the same input, e.g. several rotary actuators on
+   * one torque shaft. Each moves its bodies about its own pivot (same axis
+   * name, in that pivot's frame) by `ratio` × the actuator travel.
+   */
+  outputs: z.array(z.object({
+    pivotNode: z.string(),
+    movingBodies: z.array(z.string()),
+    ratio: z.number().optional(),
+  })).optional(),
 });
 
 export const StepDefSchema = z.object({
   type: z.literal('operation'),
-  operation: z.object({
-    type: z.literal('align_node'),
-    effectorNode: z.string(),
-    targetNode: z.string(),
-    pivotNode: z.string(),
-    jointId: z.string(),
-    movingBodies: z.array(z.string()),
-    damping: z.number().positive().max(1).optional(),
-  }),
+  operation: z.discriminatedUnion('type', [
+    z.object({
+      type: z.literal('align_node'),
+      effectorNode: z.string(),
+      targetNode: z.string(),
+      pivotNode: z.string(),
+      jointId: z.string(),
+      movingBodies: z.array(z.string()),
+      damping: z.number().positive().max(1).optional(),
+    }),
+    z.object({
+      type: z.literal('close_loops'),
+      joints: z.array(z.object({
+        jointId: z.string(),
+        pivotNode: z.string(),
+        movingBodies: z.array(z.string()),
+      })).min(1),
+      pairs: z.array(z.tuple([z.string(), z.string()])).min(1),
+      damping: z.number().nonnegative().optional(),
+    }),
+  ]),
 });
 
 export const LoopDefSchema = z.object({

@@ -16,7 +16,8 @@ from wigglesolve.math.matrix4x4 import Matrix4x4
 from wigglesolve.solver.conditions import Condition
 from wigglesolve.solver.executor import Instruction, LoopInstruction, OperationInstruction
 from wigglesolve.solver.operations import Operation
-from wigglesolve.system.kinematic_system import KinematicSystem
+from wigglesolve.solver.close_loops import CloseLoopsOperation, LoopJoint
+from wigglesolve.system.kinematic_system import KinematicSystem, apply_joint_delta
 
 Definition = Dict[str, Any]
 
@@ -106,6 +107,12 @@ def build_system(definition: Definition, system: Optional[KinematicSystem] = Non
 def parse_instruction(raw: Dict[str, Any]) -> Instruction:
     if raw['type'] == 'operation':
         op = raw['operation']
+        if op['type'] == 'close_loops':
+            return OperationInstruction(CloseLoopsOperation(
+                joints=[LoopJoint(j['jointId'], j['pivotNode'], list(j['movingBodies'])) for j in op['joints']],
+                pairs=[(a, b) for a, b in op['pairs']],
+                damping=op.get('damping'),
+            ))
         return OperationInstruction(Operation(
             type=op['type'],
             effector_node=op['effectorNode'],
@@ -140,6 +147,20 @@ def parse_instruction(raw: Dict[str, Any]) -> Instruction:
 
 def build_sequence(definition: Definition) -> List[Instruction]:
     return [parse_instruction(s) for s in definition['sequence']]
+
+
+def drive_actuator(system: KinematicSystem, actuator: Dict[str, Any], delta: float) -> None:
+    """Moves an actuator (and its additional outputs) by ``delta`` about its pivot(s)."""
+    axis = {'x': (1.0, 0.0, 0.0), 'y': (0.0, 1.0, 0.0), 'z': (0.0, 0.0, 1.0)}[actuator['axis']]
+    joint = Joint(actuator['id'], actuator['type'], axis)
+    outputs = [{'pivotNode': actuator['pivotNode'], 'movingBodies': actuator['movingBodies']}]
+    outputs += actuator.get('outputs', [])
+    for out in outputs:
+        pivot = system.nodes.get(out['pivotNode'])
+        if pivot is None:
+            continue
+        bodies = [system.bodies[b] for b in out['movingBodies'] if b in system.bodies]
+        apply_joint_delta(joint, pivot, bodies, delta * out.get('ratio', 1.0))
 
 
 def load_definition_file(path: Union[str, Path]) -> Definition:

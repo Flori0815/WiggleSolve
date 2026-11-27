@@ -1,5 +1,5 @@
 import { axisName, axisVector, conditionFromPairs, conditionPairs } from '@wigglesolve/core';
-import type { Instruction, Mechanism } from '@wigglesolve/core';
+import type { AlignNodeOperation, CloseLoopsOperation, Instruction, Mechanism } from '@wigglesolve/core';
 import { useExpanded } from '../../hooks/useExpanded';
 import { Card } from '../common/Card';
 import { Section } from '../common/Section';
@@ -8,10 +8,11 @@ import { AxisPicker, ChipSelect, JointTypePicker, NumberField, SelectField } fro
 type Props = { mechanism: Mechanism; onChange: () => void };
 type Loop = Extract<Instruction, { type: 'loop' }>;
 type Step = Extract<Instruction, { type: 'operation' }>;
+type AlignStep = Step & { operation: AlignNodeOperation };
 
 type StepCardProps = {
   mechanism: Mechanism;
-  step: Step;
+  step: AlignStep;
   loop: Loop;
   index: number;
   collapsed: boolean;
@@ -57,6 +58,36 @@ const StepCard = ({ mechanism, step, loop, index, collapsed, onToggle, nodeIds, 
     </Card>
   );
 };
+
+type CloseLoopsCardProps = {
+  op: CloseLoopsOperation;
+  collapsed: boolean;
+  onToggle: () => void;
+  onDelete: () => void;
+};
+
+/** Simultaneous closure step: shown as a summary (edited in the definition JSON or by a generator). */
+const CloseLoopsCard = ({ op, collapsed, onToggle, onDelete }: CloseLoopsCardProps) => (
+  <Card
+    accent="step"
+    title="Close loops simultaneously"
+    subtitle={`${op.joints.length} joints · ${op.pairs.length} closures`}
+    collapsed={collapsed}
+    onToggle={onToggle}
+    onDelete={onDelete}
+    deleteLabel="Delete close-loops step"
+  >
+    <p className="field-hint">One Gauss-Newton step per iteration over all listed joints; use it for strongly coupled loops.</p>
+    <span className="field-label">Closures</span>
+    <ul className="plain-list">
+      {op.pairs.map(([a, b]) => <li key={`${a}-${b}`}>{a} ↔ {b}</li>)}
+    </ul>
+    <span className="field-label">Joints</span>
+    <ul className="plain-list">
+      {op.joints.map(j => <li key={j.jointId}>{j.jointId} <span className="muted">about {j.pivotNode}</span></li>)}
+    </ul>
+  </Card>
+);
 
 export const SequenceEditor = ({ mechanism, onChange }: Props) => {
   const { isCollapsed, toggle, expand } = useExpanded();
@@ -118,11 +149,19 @@ export const SequenceEditor = ({ mechanism, onChange }: Props) => {
               }}>+ Add align step</button>
             </div>
             {instr.steps.length === 0 && <p className="empty-state">No steps yet.</p>}
-            {instr.steps.map((step, j) => step.type === 'operation' && (
+            {instr.steps.map((step, j) => step.type === 'operation' && (step.operation.type === 'close_loops' ? (
+              <CloseLoopsCard
+                key={`step-${i}-${j}`}
+                op={step.operation}
+                collapsed={isCollapsed(`step:${i}:${j}`)}
+                onToggle={() => toggle(`step:${i}:${j}`)}
+                onDelete={() => { instr.steps.splice(j, 1); onChange(); }}
+              />
+            ) : (
               <StepCard
                 key={`step-${i}-${j}`}
                 mechanism={mechanism}
-                step={step}
+                step={step as AlignStep}
                 loop={instr}
                 index={j}
                 collapsed={isCollapsed(`step:${i}:${j}`)}
@@ -131,7 +170,7 @@ export const SequenceEditor = ({ mechanism, onChange }: Props) => {
                 bodyIds={bodyIds}
                 onChange={onChange}
               />
-            ))}
+            )))}
           </Card>
         );
       })}

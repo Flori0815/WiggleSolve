@@ -1,9 +1,10 @@
-import { buildSequence, buildSystem, parseDefinition } from '../definition/build';
+import { buildSequence, buildSystem, copyActuator, parseDefinition } from '../definition/build';
 import { axisVector } from '../math/axis';
 import { serializeDefinition } from '../definition/serialize';
 import type { ActuatorDef, MechanismDefinition } from '../definition/schema';
 import { Joint } from '../elements/Joint';
 import { Executor } from '../solver/Executor';
+import { operationJointIds } from '../solver/operations';
 import type { Instruction } from '../solver/Executor';
 import { KinematicSystem } from '../system/KinematicSystem';
 import { captureSnapshot, restoreSnapshot } from '../system/snapshot';
@@ -63,7 +64,7 @@ export class Mechanism {
     buildSystem(def, this.system);
     this.name = def.name;
     this.description = def.description;
-    this.actuators = def.actuators.map(a => ({ ...a, movingBodies: [...a.movingBodies] }));
+    this.actuators = def.actuators.map(copyActuator);
     this.sequence = buildSequence(def.sequence);
     this.driveValues.clear();
     this.definitionSnapshot = null;
@@ -110,7 +111,8 @@ export class Mechanism {
 
   /**
    * Moves an actuator to an absolute value (clamped to its limits) by rigidly
-   * transforming its moving bodies about its pivot. Returns the applied value.
+   * transforming its moving bodies about its pivot, and every additional output
+   * about its own pivot (scaled by its ratio). Returns the applied value.
    */
   setActuatorValue(id: string, value: number): number {
     const actuator = this.getActuator(id);
@@ -121,10 +123,13 @@ export class Mechanism {
     if (!pivot) return this.getActuatorValue(id);
 
     const driveJoint = new Joint(id, actuator.type, axisVector(actuator.axis));
-    const bodies = actuator.movingBodies
-      .map(bodyId => this.system.bodies.get(bodyId))
-      .filter(b => b !== undefined);
-    applyJointDelta(driveJoint, pivot, bodies, target - this.getActuatorValue(id));
+    const delta = target - this.getActuatorValue(id);
+    const bodiesOf = (ids: string[]) => ids.map(bodyId => this.system.bodies.get(bodyId)).filter(b => b !== undefined);
+    applyJointDelta(driveJoint, pivot, bodiesOf(actuator.movingBodies), delta);
+    for (const output of actuator.outputs ?? []) {
+      const outputPivot = this.system.nodes.get(output.pivotNode);
+      if (outputPivot) applyJointDelta(driveJoint, outputPivot, bodiesOf(output.movingBodies), delta * (output.ratio ?? 1));
+    }
     this.driveValues.set(id, target);
     return target;
   }
@@ -142,7 +147,7 @@ export class Mechanism {
   private solverJointsAtLimit(): string[] {
     const ids = new Set<string>();
     const collect = (list: Instruction[]) => list.forEach(i => {
-      if (i.type === 'loop') collect(i.steps); else ids.add(i.operation.jointId);
+      if (i.type === 'loop') collect(i.steps); else operationJointIds(i.operation).forEach(id => ids.add(id));
     });
     collect(this.sequence);
     return [...ids].filter(id => {

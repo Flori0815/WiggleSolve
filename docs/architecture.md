@@ -82,7 +82,7 @@ Feature parity between the cores:
 
 | Feature | core-js | core-py |
 |---|---|---|
-| Math, elements, solver, LookAt (incl. secondary axis) | ✓ | ✓ |
+| Math, elements, solver (`align_node`, `close_loops`, multi-pair conditions), LookAt | ✓ | ✓ |
 | Definition loading (+ explicit body transforms) | ✓ | ✓ |
 | Visual meshes | ✓ | ignored (not needed for solving) |
 | Schema validation, serialisation, `Mechanism` | ✓ | – |

@@ -4,10 +4,11 @@ import { RigidBody } from '../elements/RigidBody';
 import { Matrix4x4 } from '../math/Matrix4x4';
 import type { Instruction } from '../solver/Executor';
 import { copyCondition } from '../solver/conditions';
+import { copyOperation } from '../solver/operations';
 import { KinematicSystem } from '../system/KinematicSystem';
 import { assembleKinematicChain } from './assembly';
 import { MechanismDefinitionSchema } from './schema';
-import type { MechanismDefinition, LoopDef } from './schema';
+import type { ActuatorDef, MechanismDefinition, LoopDef } from './schema';
 
 /** Raised when a definition does not match {@link MechanismDefinitionSchema}. */
 export class DefinitionError extends Error {
@@ -85,6 +86,15 @@ export function buildSystem(def: MechanismDefinition, system = new KinematicSyst
   return system;
 }
 
+/** Deep copy of an actuator definition. */
+export function copyActuator(a: ActuatorDef): ActuatorDef {
+  return {
+    ...a,
+    movingBodies: [...a.movingBodies],
+    ...(a.outputs ? { outputs: a.outputs.map(o => ({ ...o, movingBodies: [...o.movingBodies] })) } : {}),
+  };
+}
+
 /** Deep-copies a definition's sequence into executable instructions. */
 export function buildSequence(loops: LoopDef[]): Instruction[] {
   return loops.map(loop => ({
@@ -93,7 +103,7 @@ export function buildSequence(loops: LoopDef[]): Instruction[] {
     condition: copyCondition(loop.condition),
     steps: loop.steps.map(step => ({
       type: 'operation',
-      operation: { ...step.operation, movingBodies: [...step.operation.movingBodies] },
+      operation: copyOperation(step.operation),
     })),
   }));
 }

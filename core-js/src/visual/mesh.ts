@@ -62,25 +62,33 @@ const BOX_INDICES = [
 ];
 
 /**
- * Extrudes a convex polygon in the xy plane from `z0` to `z1`
- * (caps are fan-triangulated).
+ * Skins two sections with the same number of points (e.g. a tapered, swept
+ * flap between two stations). Sections should be convex; caps are
+ * fan-triangulated.
  */
-export function prismMesh(profile: Point2[], z0: number, z1: number, style: Style = {}): MeshVisual {
-  const n = profile.length;
-  const vertices = [
-    ...profile.flatMap(([x, y]) => [x, y, z0]),
-    ...profile.flatMap(([x, y]) => [x, y, z1]),
-  ].map(round);
+export function loftMesh(a: Point3[], b: Point3[], style: Style = {}): MeshVisual {
+  if (a.length !== b.length || a.length < 3) throw new Error('loftMesh needs two sections with the same number (≥ 3) of points');
+  const n = a.length;
+  const vertices = [...a, ...b].flat().map(round);
   const indices: number[] = [];
   for (let i = 1; i < n - 1; i++) {
-    indices.push(0, i + 1, i);          // cap at z0 (faces -z)
-    indices.push(n, n + i, n + i + 1);  // cap at z1 (faces +z)
+    indices.push(0, i + 1, i);          // cap at a
+    indices.push(n, n + i, n + i + 1);  // cap at b
   }
   for (let i = 0; i < n; i++) {
     const j = (i + 1) % n;
     indices.push(i, j, n + j, i, n + j, n + i);
   }
   return { type: 'mesh', vertices, indices, ...style };
+}
+
+/** Extrudes a convex polygon in the xy plane from `z0` to `z1`. */
+export function prismMesh(profile: Point2[], z0: number, z1: number, style: Style = {}): MeshVisual {
+  return loftMesh(
+    profile.map(([x, y]) => [x, y, z0]),
+    profile.map(([x, y]) => [x, y, z1]),
+    style,
+  );
 }
 
 /**
