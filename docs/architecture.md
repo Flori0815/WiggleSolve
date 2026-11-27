@@ -15,6 +15,7 @@ in the core; everything else only adapts it to a medium** (browser, MCP, tests).
             │  solver/      Executor, conditions, ops     │
             │  definition/  schema, build, serialize,     │
             │               assembly                      │
+            │  visual/      representation meshes         │
             │  simulation/  Mechanism                     │
             │  mechanisms/  parametric generators (flaps) │
             └───────▲──────────────▲──────────────▲───────┘
@@ -33,6 +34,7 @@ in the core; everything else only adapts it to a medium** (browser, MCP, tests).
 | `system` | `KinematicSystem` registry, forward kinematics, LookAt alignment, body moves (`applyJointDelta`), state snapshots | elements |
 | `solver` | `Executor` runs loops of `align_node` operations until a distance condition holds | system |
 | `definition` | JSON interchange: zod schema, `parseDefinition`, `buildSystem`, `serializeDefinition`, initial assembly | system, solver |
+| `visual` | Representation meshes on bodies and mesh builders; never read by the solver | math, elements |
 | `mechanisms` | Parametric generators that emit definitions for a family of mechanisms (see [flap-systems.md](flap-systems.md)) | definition, math |
 | `simulation` | `Mechanism`: system + actuators + sequence; drive, solve, definition ↔ simulation lifecycle, editing helpers | all of the above |
 
@@ -82,6 +84,7 @@ Feature parity between the cores:
 |---|---|---|
 | Math, elements, solver, LookAt (incl. secondary axis) | ✓ | ✓ |
 | Definition loading (+ explicit body transforms) | ✓ | ✓ |
+| Visual meshes | ✓ | ignored (not needed for solving) |
 | Schema validation, serialisation, `Mechanism` | ✓ | – |
 
 ## Review findings and decisions

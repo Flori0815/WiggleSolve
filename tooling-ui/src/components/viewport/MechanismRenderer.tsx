@@ -2,18 +2,34 @@ import * as THREE from 'three';
 import type { KinematicSystem } from '@wigglesolve/core';
 import { BODY_COLORS, positionOf } from './scene';
 import { Label } from './Label';
+import { MeshVisuals } from './MeshVisuals';
 
 type Props = { system: KinematicSystem; size: number; showLabels: boolean; showNodeLabels: boolean; showFrames: boolean };
 
 const Y_UP = new THREE.Vector3(0, 1, 0);
 
-/** Bodies as rods between their nodes, nodes as spheres (anchors as cubes). */
+/**
+ * Bodies with meshes are drawn as their meshes; all others as rods between
+ * their nodes. Nodes are spheres (anchors are cubes).
+ */
 export const MechanismRenderer = ({ system, size, showLabels, showNodeLabels, showFrames }: Props) => {
   const rod = size * 0.012;
   const items: React.ReactNode[] = [];
 
   [...system.bodies.values()].forEach((body, index) => {
     const color = BODY_COLORS[index % BODY_COLORS.length];
+    if (body.visuals.length > 0) {
+      items.push(<MeshVisuals key={`mesh-${body.id}`} body={body} color={color} />);
+      if (showLabels) {
+        const anchor = body.nodes.values().next().value;
+        items.push(
+          <group key={`label-${body.id}`} position={positionOf(anchor ? anchor.absoluteTransform : body.transform)}>
+            <Label color={color} offset="above">{body.id}</Label>
+          </group>,
+        );
+      }
+      return;
+    }
     const points = [...body.nodes.values()].map(n => positionOf(n.absoluteTransform));
     // Single-node bodies are drawn from the body origin (their pivot) to the node.
     if (points.length === 1) points.unshift(positionOf(body.transform));

@@ -17,6 +17,8 @@ export * from './solver/conditions';
 export * from './solver/operations';
 // Definition (JSON interchange)
 export * from './definition';
+// Visual representation
+export * from './visual/mesh';
 // Simulation
 export * from './simulation/Mechanism';
 // Mechanism library (parametric generators)

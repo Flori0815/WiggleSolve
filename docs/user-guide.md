@@ -24,7 +24,7 @@ into the definition.
 
 | Tab | Contents |
 |---|---|
-| Bodies & nodes | Rigid bodies with their nodes (positions in the body frame, optional look-at orientation) and fixed points in world space. |
+| Bodies & nodes | Rigid bodies with their representation (attach an STL in m or mm, exported in world coordinates of the reference pose), their nodes (positions in the body frame, optional look-at orientation) and fixed points in world space. |
 | Actuators | Manual drives: rotate/slide, axis, pivot node, moved bodies and drive range (° or m). |
 | Solver | Loops that run their align steps until two nodes meet, with tolerance, iteration limit and per-step damping. |
 

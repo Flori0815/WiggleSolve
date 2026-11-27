@@ -7,6 +7,7 @@ import { InlineIdInput } from '../common/InlineIdInput';
 import { Section } from '../common/Section';
 import { Vec3Field } from '../common/fields';
 import { NodeEditor } from './NodeEditor';
+import { VisualsEditor } from './VisualsEditor';
 
 type Props = { mechanism: Mechanism; onChange: () => void };
 
@@ -60,6 +61,7 @@ export const ElementsEditor = ({ mechanism, onChange }: Props) => {
               value={body.transform.getTranslation()}
               onChange={([x, y, z]) => { body.transform = body.transform.clone().setTranslation(x, y, z); onChange(); }}
             />
+            <VisualsEditor body={body} onChange={onChange} />
             <div className="subsection-header">
               <span className="field-label">Nodes</span>
               <button className="btn-link" onClick={() => setAddingNodeTo(body.id)}>+ Add node</button>

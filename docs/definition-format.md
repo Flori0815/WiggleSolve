@@ -48,6 +48,26 @@ A mechanism is exchanged as JSON validated by `MechanismDefinitionSchema`
 | Loop | Repeats its steps until `distance(nodeA, nodeB) < threshold` or `max_iterations` is reached. |
 | `align_node` | Moves `jointId` so that `effectorNode` approaches `targetNode`, transforming `movingBodies` about `pivotNode`. `damping` (0–1, default 0.5) scales each step. |
 
+## Visuals
+
+Bodies may carry `visuals`: triangle meshes in the body frame that are drawn
+in the viewport and ignored by the solver. This keeps the kinematic model
+minimal — only nodes that joints, actuators or loops need — while the
+representation can be arbitrarily detailed.
+
+```jsonc
+"visuals": [
+  { "type": "mesh", "vertices": [x0, y0, z0, x1, y1, z1, …], "indices": [0, 1, 2, …],
+    "color": "#94a3b8", "opacity": 0.9 }
+]
+```
+
+Core helpers build meshes: `beamMesh(a, b, width, height?)`,
+`prismMesh(profile, z0, z1)` (convex profile extruded along z),
+`boxMesh(min, max)` and `meshFromWorldTriangles(body, positions, { scale })`
+(e.g. an STL export of the reference pose). Bodies without visuals are drawn
+as rods between their nodes.
+
 ## Body placement
 
 If a body has no `transform`, the loader places it:

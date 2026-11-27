@@ -48,6 +48,7 @@ export function serializeDefinition(
       bodyNodeIds.add(node.id);
       return { id: node.id, localTransform: toArray(node.localTransform) };
     }),
+    ...(body.visuals.length ? { visuals: body.visuals.map(v => ({ ...v })) } : {}),
   }));
 
   const globalNodes = [...system.nodes.values()]

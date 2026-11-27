@@ -15,6 +15,14 @@ export const NodeDefSchema = z.object({
   localTransform: Mat16,
 });
 
+export const MeshVisualSchema = z.object({
+  type: z.literal('mesh'),
+  vertices: z.array(z.number()).refine(v => v.length % 3 === 0, 'vertices must be xyz triples'),
+  indices: z.array(z.number().int().nonnegative()).refine(i => i.length % 3 === 0, 'indices must be triangles'),
+  color: z.string().optional(),
+  opacity: z.number().min(0).max(1).optional(),
+}).refine(m => m.indices.every(i => i < m.vertices.length / 3), 'index out of range');
+
 export const BodyDefSchema = z.object({
   id: z.string(),
   /**
@@ -24,6 +32,8 @@ export const BodyDefSchema = z.object({
    */
   transform: Mat16.optional(),
   nodes: z.array(NodeDefSchema),
+  /** Triangle meshes in the body frame, for representation only. */
+  visuals: z.array(MeshVisualSchema).optional(),
 });
 
 export const GlobalNodeDefSchema = z.object({

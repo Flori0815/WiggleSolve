@@ -1,5 +1,6 @@
 import { Matrix4x4 } from '../math/Matrix4x4';
 import { Node } from './Node';
+import type { MeshVisual } from '../visual/mesh';
 
 export class RigidBody {
   public id: string;
@@ -7,6 +8,8 @@ export class RigidBody {
   public transform: Matrix4x4;
   /** Nodes that are rigidly attached to this body */
   public nodes: Map<string, Node> = new Map();
+  /** Representation only (body frame); ignored by the solver. */
+  public visuals: MeshVisual[] = [];
 
   constructor(id: string) {
     this.id = id;
