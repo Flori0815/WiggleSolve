@@ -9,7 +9,8 @@
     "test": "jest",
     "test:coverage": "jest --coverage",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit -p tsconfig.test.json"
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "generate:demos": "tsx scripts/generate-demos.ts"
   },
   "license": "MIT",
   "dependencies": {
@@ -23,6 +24,7 @@
     "globals": "^15.15.0",
     "jest": "^30.4.2",
     "ts-jest": "^29.4.11",
+    "tsx": "^4.19.4",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.62.0"
   },

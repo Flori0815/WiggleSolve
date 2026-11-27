@@ -16,6 +16,7 @@ in the core; everything else only adapts it to a medium** (browser, MCP, tests).
             │  definition/  schema, build, serialize,     │
             │               assembly                      │
             │  simulation/  Mechanism                     │
+            │  mechanisms/  parametric generators (flaps) │
             └───────▲──────────────▲──────────────▲───────┘
                     │              │              │
         tooling-ui (React)   mcp-server (MCP)   test-suite/js
@@ -32,6 +33,7 @@ in the core; everything else only adapts it to a medium** (browser, MCP, tests).
 | `system` | `KinematicSystem` registry, forward kinematics, LookAt alignment, body moves (`applyJointDelta`), state snapshots | elements |
 | `solver` | `Executor` runs loops of `align_node` operations until a distance condition holds | system |
 | `definition` | JSON interchange: zod schema, `parseDefinition`, `buildSystem`, `serializeDefinition`, initial assembly | system, solver |
+| `mechanisms` | Parametric generators that emit definitions for a family of mechanisms (see [flap-systems.md](flap-systems.md)) | definition, math |
 | `simulation` | `Mechanism`: system + actuators + sequence; drive, solve, definition ↔ simulation lifecycle, editing helpers | all of the above |
 
 Lower layers never import higher ones.

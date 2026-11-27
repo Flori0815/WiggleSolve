@@ -41,6 +41,6 @@ could not run (e.g. a loop references a missing node).
 
 ## Viewport
 
-Drag to orbit, right-drag to pan, scroll to zoom. The toolbar toggles labels,
+Drag to orbit, right-drag to pan, scroll to zoom. The toolbar toggles body/actuator names, node names,
 node frames and the legend; **Fit view** re-frames the mechanism (this also
 happens automatically on load).

@@ -1,0 +1,428 @@
+{
+  "name": "Dropped-Hinge Flap",
+  "description": "Split trailing-edge flap on a dropped hinge with two supports (inboard spanwise fixed, outboard spanwise free). Each support has a rotary actuator driving its panel through a crank and drive strut; the panels rotate independently about the hinge axis, so the two actuators never over-constrain the flap.",
+  "system": {
+    "bodies": [
+      {
+        "id": "wing_spar",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "spar_root",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1]
+          },
+          {
+            "id": "spar_tip",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 3, 1]
+          }
+        ]
+      },
+      {
+        "id": "support_1",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "support_1_spar",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.75, 1]
+          },
+          {
+            "id": "hinge_1",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.6, -0.3, 0.75, 1]
+          },
+          {
+            "id": "gra_1_axis",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.15, -0.05, 0.75, 1]
+          }
+        ]
+      },
+      {
+        "id": "crank_1",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "crank_1_root",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.15, -0.05, 0.75, 1]
+          },
+          {
+            "id": "crank_1_tip",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.15, -0.2, 0.75, 1]
+          }
+        ]
+      },
+      {
+        "id": "strut_1",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "strut_1_top",
+            "localTransform": [0.9922778767136676, 0.12403473458920848, 0, 0, -0.12403473458920848, 0.9922778767136676, 0, 0, 0, 0, 1, 0, 0.15, -0.2, 0.75, 1]
+          },
+          {
+            "id": "strut_1_end",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.55, -0.15, 0.75, 1]
+          }
+        ]
+      },
+      {
+        "id": "flap_1_panel",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "flap_1_le_in",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.45, -0.05, 0, 1]
+          },
+          {
+            "id": "flap_1_te_in",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1.45, -0.12, 0, 1]
+          },
+          {
+            "id": "flap_1_te_out",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1.45, -0.12, 1.5, 1]
+          },
+          {
+            "id": "flap_1_le_out",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.45, -0.05, 1.5, 1]
+          }
+        ]
+      },
+      {
+        "id": "flap_1_bracket",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "flap_1_hinge",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.6, -0.3, 0.75, 1]
+          },
+          {
+            "id": "flap_1_lug",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.55, -0.15, 0.75, 1]
+          }
+        ]
+      },
+      {
+        "id": "flap_1_hingeline",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "flap_1_axis_end",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.6, -0.3, 0, 1]
+          },
+          {
+            "id": "flap_1_axis_split",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.6, -0.3, 1.5, 1]
+          }
+        ]
+      },
+      {
+        "id": "support_2",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "support_2_spar",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 2.25, 1]
+          },
+          {
+            "id": "hinge_2",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.6, -0.3, 2.25, 1]
+          },
+          {
+            "id": "gra_2_axis",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.15, -0.05, 2.25, 1]
+          }
+        ]
+      },
+      {
+        "id": "crank_2",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "crank_2_root",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.15, -0.05, 2.25, 1]
+          },
+          {
+            "id": "crank_2_tip",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.15, -0.2, 2.25, 1]
+          }
+        ]
+      },
+      {
+        "id": "strut_2",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "strut_2_top",
+            "localTransform": [0.9922778767136676, 0.12403473458920848, 0, 0, -0.12403473458920848, 0.9922778767136676, 0, 0, 0, 0, 1, 0, 0.15, -0.2, 2.25, 1]
+          },
+          {
+            "id": "strut_2_end",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.55, -0.15, 2.25, 1]
+          }
+        ]
+      },
+      {
+        "id": "flap_2_panel",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "flap_2_le_in",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.45, -0.05, 1.5, 1]
+          },
+          {
+            "id": "flap_2_te_in",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1.45, -0.12, 1.5, 1]
+          },
+          {
+            "id": "flap_2_te_out",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1.45, -0.12, 3, 1]
+          },
+          {
+            "id": "flap_2_le_out",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.45, -0.05, 3, 1]
+          }
+        ]
+      },
+      {
+        "id": "flap_2_bracket",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "flap_2_hinge",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.6, -0.3, 2.25, 1]
+          },
+          {
+            "id": "flap_2_lug",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.55, -0.15, 2.25, 1]
+          }
+        ]
+      },
+      {
+        "id": "flap_2_hingeline",
+        "transform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
+        "nodes": [
+          {
+            "id": "flap_2_axis_end",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.6, -0.3, 3, 1]
+          },
+          {
+            "id": "flap_2_axis_split",
+            "localTransform": [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.6, -0.3, 1.5, 1]
+          }
+        ]
+      }
+    ],
+    "globalNodes": [],
+    "joints": [
+      {
+        "id": "gra_1",
+        "type": "revolute",
+        "axis": [0, 0, 1],
+        "limits": [0, 1.0471975511965976]
+      },
+      {
+        "id": "strut_1_rot",
+        "type": "revolute",
+        "axis": [0, 0, 1],
+        "limits": [-3.141592653589793, 3.141592653589793]
+      },
+      {
+        "id": "strut_1_tilt",
+        "type": "revolute",
+        "axis": [0, 1, 0],
+        "limits": [-0.17453292519943295, 0.17453292519943295]
+      },
+      {
+        "id": "flap_1_rot",
+        "type": "revolute",
+        "axis": [0, 0, 1],
+        "limits": [-1.2217304763960306, 0.17453292519943295]
+      },
+      {
+        "id": "gra_2",
+        "type": "revolute",
+        "axis": [0, 0, 1],
+        "limits": [0, 1.0471975511965976]
+      },
+      {
+        "id": "strut_2_rot",
+        "type": "revolute",
+        "axis": [0, 0, 1],
+        "limits": [-3.141592653589793, 3.141592653589793]
+      },
+      {
+        "id": "strut_2_tilt",
+        "type": "revolute",
+        "axis": [0, 1, 0],
+        "limits": [-0.17453292519943295, 0.17453292519943295]
+      },
+      {
+        "id": "flap_2_rot",
+        "type": "revolute",
+        "axis": [0, 0, 1],
+        "limits": [-1.2217304763960306, 0.17453292519943295]
+      },
+      {
+        "id": "support_2_slide",
+        "type": "prismatic",
+        "axis": [0, 0, 1],
+        "limits": [-0.05, 0.05]
+      }
+    ]
+  },
+  "actuators": [
+    {
+      "id": "gra_1",
+      "type": "revolute",
+      "axis": "z",
+      "pivotNode": "gra_1_axis",
+      "movingBodies": [
+        "crank_1",
+        "strut_1"
+      ]
+    },
+    {
+      "id": "gra_2",
+      "type": "revolute",
+      "axis": "z",
+      "pivotNode": "gra_2_axis",
+      "movingBodies": [
+        "crank_2",
+        "strut_2"
+      ]
+    }
+  ],
+  "sequence": [
+    {
+      "type": "loop",
+      "max_iterations": 100,
+      "condition": {
+        "type": "distance_less_than",
+        "nodeA": "flap_2_axis_split",
+        "nodeB": "flap_1_axis_split",
+        "threshold": 0.0001
+      },
+      "steps": [
+        {
+          "type": "operation",
+          "operation": {
+            "type": "align_node",
+            "effectorNode": "flap_2_axis_split",
+            "targetNode": "flap_1_axis_split",
+            "pivotNode": "hinge_2",
+            "jointId": "support_2_slide",
+            "movingBodies": [
+              "flap_2_panel",
+              "flap_2_bracket",
+              "flap_2_hingeline"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "loop",
+      "max_iterations": 500,
+      "condition": {
+        "type": "distance_less_than",
+        "nodeA": "strut_1_end",
+        "nodeB": "flap_1_lug",
+        "threshold": 0.0001
+      },
+      "steps": [
+        {
+          "type": "operation",
+          "operation": {
+            "type": "align_node",
+            "effectorNode": "strut_1_end",
+            "targetNode": "flap_1_lug",
+            "pivotNode": "strut_1_top",
+            "jointId": "strut_1_rot",
+            "movingBodies": [
+              "strut_1"
+            ]
+          }
+        },
+        {
+          "type": "operation",
+          "operation": {
+            "type": "align_node",
+            "effectorNode": "strut_1_end",
+            "targetNode": "flap_1_lug",
+            "pivotNode": "strut_1_top",
+            "jointId": "strut_1_tilt",
+            "movingBodies": [
+              "strut_1"
+            ]
+          }
+        },
+        {
+          "type": "operation",
+          "operation": {
+            "type": "align_node",
+            "effectorNode": "flap_1_lug",
+            "targetNode": "strut_1_end",
+            "pivotNode": "hinge_1",
+            "jointId": "flap_1_rot",
+            "movingBodies": [
+              "flap_1_panel",
+              "flap_1_bracket",
+              "flap_1_hingeline"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "loop",
+      "max_iterations": 500,
+      "condition": {
+        "type": "distance_less_than",
+        "nodeA": "strut_2_end",
+        "nodeB": "flap_2_lug",
+        "threshold": 0.0001
+      },
+      "steps": [
+        {
+          "type": "operation",
+          "operation": {
+            "type": "align_node",
+            "effectorNode": "strut_2_end",
+            "targetNode": "flap_2_lug",
+            "pivotNode": "strut_2_top",
+            "jointId": "strut_2_rot",
+            "movingBodies": [
+              "strut_2"
+            ]
+          }
+        },
+        {
+          "type": "operation",
+          "operation": {
+            "type": "align_node",
+            "effectorNode": "strut_2_end",
+            "targetNode": "flap_2_lug",
+            "pivotNode": "strut_2_top",
+            "jointId": "strut_2_tilt",
+            "movingBodies": [
+              "strut_2"
+            ]
+          }
+        },
+        {
+          "type": "operation",
+          "operation": {
+            "type": "align_node",
+            "effectorNode": "flap_2_lug",
+            "targetNode": "strut_2_end",
+            "pivotNode": "hinge_2",
+            "jointId": "flap_2_rot",
+            "movingBodies": [
+              "flap_2_panel",
+              "flap_2_bracket",
+              "flap_2_hingeline"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
