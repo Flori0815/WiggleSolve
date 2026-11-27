@@ -1,33 +1,45 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 
+  --text-xs: 0.6875rem;
   --text-sm: 0.75rem;
-  --text-base: 0.875rem;
-  --text-lg: 1rem;
+  --text-base: 0.8125rem;
+  --text-lg: 0.9375rem;
   --text-xl: 1.25rem;
 
-  --color-accent:   #c084fc; /* interactive actions, active state */
-  --color-danger:   #ef4444; /* destructive actions only (delete) */
-  --color-anchor:   #f59e0b; /* locked/anchor node state (amber) */
-  --color-loop:     #c084fc; /* LOOP instruction accent */
-  --color-op:       #22d3ee; /* ALIGN instruction accent (cyan) */
-  --color-success:  #4ade80; /* solver converged */
-  --color-warning:  #fbbf24; /* solver timeout */
+  --bg: #08060d;
+  --surface: #16171d;
+  --surface-2: #1d1f27;
+  --surface-3: #262833;
+  --border: #2e303a;
+  --text: #f3f4f6;
+  --text-muted: #9ca3af;
+
+  --accent: #c084fc;        /* edit mode, interactive */
+  --simulate: #34d399;      /* simulate mode */
+  --danger: #ef4444;
+  --warning: #fbbf24;
+  --success: #4ade80;
+  --c-body: #38bdf8;
+  --c-node: #aa3bff;
+  --c-actuator: #f59e0b;
+  --c-loop: #c084fc;
+  --c-step: #22d3ee;
+
+  --radius: 6px;
 }
 
-body {
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
   margin: 0;
-  padding: 0;
-  width: 100vw;
-  height: 100vh;
-  overflow: hidden;
-}
-
-#root {
   width: 100%;
   height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
 }

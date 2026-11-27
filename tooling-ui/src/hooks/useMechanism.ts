@@ -2,7 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Mechanism, safeParseDefinition } from '@wigglesolve/core';
 import type { SolveResult } from '@wigglesolve/core';
 
-export type AppMode = 'definition' | 'simulation';
+export type AppMode = 'edit' | 'simulate';
 export type SolverStatus =
   | { state: 'idle' }
   | { state: 'converged' }
@@ -20,9 +20,11 @@ const toStatus = (r: SolveResult): SolverStatus =>
 export function useMechanism() {
   const mechanism = useMemo(() => new Mechanism(), []);
   const [version, setVersion] = useState(0);
-  const [mode, setMode] = useState<AppMode>('definition');
+  const [mode, setMode] = useState<AppMode>('edit');
   const [status, setStatus] = useState<SolverStatus>({ state: 'idle' });
   const [loadError, setLoadError] = useState<string | null>(null);
+  /** Increments on every load so the viewport can re-frame the camera. */
+  const [loadCount, setLoadCount] = useState(0);
 
   const bump = useCallback(() => setVersion(v => v + 1), []);
 
@@ -42,15 +44,16 @@ export function useMechanism() {
     }
     mechanism.load(result.definition);
     setLoadError(null);
-    setMode('definition');
+    setMode('edit');
     setStatus({ state: 'idle' });
+    setLoadCount(c => c + 1);
     bump();
     return true;
   }, [mechanism, bump]);
 
   const switchMode = useCallback((next: AppMode) => {
     if (next === mode) return;
-    if (next === 'simulation') {
+    if (next === 'simulate') {
       setStatus(toStatus(mechanism.startSimulation()));
     } else {
       mechanism.stopSimulation();
@@ -68,6 +71,7 @@ export function useMechanism() {
   }, [mechanism, bump]);
 
   const dismissLoadError = useCallback(() => setLoadError(null), []);
+  const reportLoadError = useCallback((message: string) => setLoadError(message), []);
 
-  return { mechanism, version, mode, status, loadError, dismissLoadError, onChange, load, switchMode, drive };
+  return { mechanism, version, loadCount, mode, status, loadError, dismissLoadError, reportLoadError, onChange, load, switchMode, drive };
 }

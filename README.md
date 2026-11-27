@@ -18,7 +18,7 @@ npm run dev        # web app on http://localhost:5173
 npm test           # core unit + integration tests
 ```
 
-In the web app, pick a demo, switch to **Solved** and move the actuator
+In the web app, pick a demo, switch to **Simulate** and move the actuator
 sliders; the solver re-closes all loops on every change.
 
 ## Core concepts
@@ -46,6 +46,7 @@ sliders; the solver re-closes all loops on every change.
 
 ## Documentation
 
+- [Web app guide](docs/user-guide.md)
 - [Architecture](docs/architecture.md)
 - [Definition format](docs/definition-format.md)
 - [Development](docs/development.md)
