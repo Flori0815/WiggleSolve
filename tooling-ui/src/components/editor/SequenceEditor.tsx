@@ -1,4 +1,4 @@
-import { axisName, axisVector } from '@wigglesolve/core';
+import { axisName, axisVector, conditionFromPairs, conditionPairs } from '@wigglesolve/core';
 import type { Instruction, Mechanism } from '@wigglesolve/core';
 import { useExpanded } from '../../hooks/useExpanded';
 import { Card } from '../common/Card';
@@ -75,23 +75,34 @@ export const SequenceEditor = ({ mechanism, onChange }: Props) => {
       {mechanism.sequence.map((instr, i) => {
         if (instr.type !== 'loop') return null;
         const { condition } = instr;
+        const pairs = conditionPairs(condition);
+        const setPairs = (next: Array<[string, string]>) => { instr.condition = conditionFromPairs(next, condition.threshold); onChange(); };
         return (
           <Card
             key={`loop-${i}`}
             accent="loop"
             title={`Loop ${i + 1}`}
-            subtitle={`until ${condition.nodeA || '…'} meets ${condition.nodeB || '…'}`}
+            subtitle={pairs.length === 1
+              ? `until ${pairs[0][0] || '…'} meets ${pairs[0][1] || '…'}`
+              : `until ${pairs.length} node pairs meet`}
             collapsed={isCollapsed(`loop:${i}`)}
             onToggle={() => toggle(`loop:${i}`)}
             onDelete={() => { mechanism.sequence.splice(i, 1); onChange(); }}
             deleteLabel={`Delete loop ${i + 1}`}
           >
-            <div className="row">
-              <SelectField label="Until" value={condition.nodeA} options={nodeIds} placeholder="Node…"
-                onChange={v => { condition.nodeA = v; onChange(); }} />
-              <SelectField label="meets" value={condition.nodeB} options={nodeIds} placeholder="Node…"
-                onChange={v => { condition.nodeB = v; onChange(); }} />
-            </div>
+            {pairs.map(([a, b], k) => (
+              <div className="row" key={k}>
+                <SelectField label={k === 0 ? 'Until' : 'and'} value={a} options={nodeIds} placeholder="Node…"
+                  onChange={v => setPairs(pairs.map((p, n) => (n === k ? [v, p[1]] : p)))} />
+                <SelectField label="meets" value={b} options={nodeIds} placeholder="Node…"
+                  onChange={v => setPairs(pairs.map((p, n) => (n === k ? [p[0], v] : p)))} />
+                {pairs.length > 1 && (
+                  <button className="btn-icon btn-delete" aria-label={`Remove pair ${k + 1}`}
+                    onClick={() => setPairs(pairs.filter((_, n) => n !== k))}>×</button>
+                )}
+              </div>
+            ))}
+            <button className="btn-link" onClick={() => setPairs([...pairs, ['', '']])}>+ Add node pair</button>
             <div className="row">
               <NumberField label="Tolerance" unit="m" min={0} step={0.001} decimals={4} value={condition.threshold}
                 onChange={v => { if (v > 0) { condition.threshold = v; onChange(); } }} />

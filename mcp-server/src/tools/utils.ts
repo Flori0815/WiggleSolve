@@ -1,4 +1,4 @@
-import { translationMat16, IDENTITY_MAT16, rotationZMat16, rotationXMat16, rotationYMat16 } from '@wigglesolve/core';
+import { conditionPairs, translationMat16, IDENTITY_MAT16, rotationZMat16, rotationXMat16, rotationYMat16 } from '@wigglesolve/core';
 import { session } from '../session';
 import { ok } from './result';
 
@@ -52,7 +52,7 @@ export function handleExplainSession() {
     '',
     `Sequence loops: ${def.sequence.length}`,
     ...def.sequence.map((loop, i) =>
-      `  Loop ${i + 1}: ${loop.steps.length} step(s), max ${loop.max_iterations} iterations, converge when ${loop.condition.nodeA} within ${loop.condition.threshold} of ${loop.condition.nodeB}`
+      `  Loop ${i + 1}: ${loop.steps.length} step(s), max ${loop.max_iterations} iterations, converge when ${conditionPairs(loop.condition).map(([a, b]) => `${a}↔${b}`).join(', ')} within ${loop.condition.threshold}`
     ),
   ];
   return ok(lines.join('\n'));

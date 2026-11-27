@@ -3,6 +3,7 @@ import { Node } from '../elements/Node';
 import { RigidBody } from '../elements/RigidBody';
 import { Matrix4x4 } from '../math/Matrix4x4';
 import type { Instruction } from '../solver/Executor';
+import { copyCondition } from '../solver/conditions';
 import { KinematicSystem } from '../system/KinematicSystem';
 import { assembleKinematicChain } from './assembly';
 import { MechanismDefinitionSchema } from './schema';
@@ -89,7 +90,7 @@ export function buildSequence(loops: LoopDef[]): Instruction[] {
   return loops.map(loop => ({
     type: 'loop',
     max_iterations: loop.max_iterations,
-    condition: { ...loop.condition },
+    condition: copyCondition(loop.condition),
     steps: loop.steps.map(step => ({
       type: 'operation',
       operation: { ...step.operation, movingBodies: [...step.operation.movingBodies] },

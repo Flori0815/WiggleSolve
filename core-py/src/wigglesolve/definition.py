@@ -117,14 +117,22 @@ def parse_instruction(raw: Dict[str, Any]) -> Instruction:
         ))
     if raw['type'] == 'loop':
         cond = raw['condition']
-        return LoopInstruction(
-            max_iterations=raw['max_iterations'],
-            condition=Condition(
+        if cond['type'] == 'all_distances_less_than':
+            condition = Condition(
+                type=cond['type'],
+                threshold=cond['threshold'],
+                pairs=[(a, b) for a, b in cond['pairs']],
+            )
+        else:
+            condition = Condition(
                 type=cond['type'],
                 node_a=cond['nodeA'],
                 node_b=cond['nodeB'],
                 threshold=cond['threshold'],
-            ),
+            )
+        return LoopInstruction(
+            max_iterations=raw['max_iterations'],
+            condition=condition,
             steps=[parse_instruction(s) for s in raw['steps']],
         )
     raise ValueError(f"Unknown instruction type: {raw['type']}")

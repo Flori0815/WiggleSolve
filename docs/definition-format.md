@@ -45,7 +45,7 @@ A mechanism is exchanged as JSON validated by `MechanismDefinitionSchema`
 | Node | Coordinate frame. Body nodes use `localTransform`; global nodes use `absoluteTransform` and never move. |
 | Joint | One degree of freedom (`revolute` in radians, `prismatic` in length units) with `limits`. `axis` is expressed in the frame of the pivot node it is used with; any direction is allowed. |
 | Actuator | A manual drive. Rotates/translates `movingBodies` about `pivotNode` along a principal `axis`. Its slider range comes from the joint with the same `id`, if any. |
-| Loop | Repeats its steps until `distance(nodeA, nodeB) < threshold` or `max_iterations` is reached. |
+| Loop | Repeats its steps until its condition holds or `max_iterations` is reached. `distance_less_than` checks `nodeA`/`nodeB`; `all_distances_less_than` checks every pair in `pairs` (closes several loops at once). |
 | `align_node` | Moves `jointId` so that `effectorNode` approaches `targetNode`, transforming `movingBodies` about `pivotNode`. `damping` (0–1, default 0.5) scales each step. |
 
 ## Visuals
