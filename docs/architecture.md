@@ -17,7 +17,8 @@ in the core; everything else only adapts it to a medium** (browser, MCP, tests).
             │               assembly                      │
             │  visual/      representation meshes         │
             │  simulation/  Mechanism                     │
-            │  mechanisms/  parametric generators (flaps) │
+            │  mechanisms/  generators: flaps, surfaces,  │
+            │               widebody wing                 │
             └───────▲──────────────▲──────────────▲───────┘
                     │              │              │
         tooling-ui (React)   mcp-server (MCP)   test-suite/js
@@ -35,7 +36,7 @@ in the core; everything else only adapts it to a medium** (browser, MCP, tests).
 | `solver` | `Executor` runs loops of `align_node` operations until a distance condition holds | system |
 | `definition` | JSON interchange: zod schema, `parseDefinition`, `buildSystem`, `serializeDefinition`, initial assembly | system, solver |
 | `visual` | Representation meshes on bodies and mesh builders; never read by the solver | math, elements |
-| `mechanisms` | Parametric generators that emit definitions for a family of mechanisms (see [flap-systems.md](flap-systems.md)) | definition, math |
+| `mechanisms` | Parametric generators that emit definitions for a family of mechanisms (see [high-lift-systems.md](high-lift-systems.md)) | definition, math |
 | `simulation` | `Mechanism`: system + actuators + sequence; drive, solve, definition ↔ simulation lifecycle, editing helpers | all of the above |
 
 Lower layers never import higher ones.

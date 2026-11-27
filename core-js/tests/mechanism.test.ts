@@ -185,3 +185,35 @@ describe('jointFrames', () => {
     expect(frames[2].axis).toEqual([0, 0.6, 0.8]);
   });
 });
+
+describe('drive groups', () => {
+  test('lists groups and drives all members to a fraction of their travel', () => {
+    const m = Mechanism.fromDefinition(demo('three_link_arm.json'));
+    m.sequence = [];
+    m.actuators[0].group = 'Arm';
+    m.actuators[1].group = 'Arm';
+    m.actuators[2].group = 'Wrist';
+    expect(m.actuatorGroups()).toEqual([{ group: 'Arm', actuators: ['j1', 'j2'] }, { group: 'Wrist', actuators: ['j3'] }]);
+    expect(m.getGroupFraction('Arm')).toBeCloseTo(0.5);
+    expect(m.driveGroup('Arm', 1.5)).toEqual({ converged: true });
+    expect(m.getActuatorValue('j1')).toBeCloseTo(3.14159);
+    expect(m.getGroupFraction('Arm')).toBeCloseTo(1);
+    expect(m.getGroupFraction('nope')).toBe(0);
+    m.setActuatorLimits('j3', [0, 0]);
+    expect(m.getGroupFraction('Wrist')).toBe(0);
+  });
+});
+
+describe('stepwise driving', () => {
+  test('large moves are followed in steps; a failing sequence stops early with its error', () => {
+    const m = Mechanism.fromDefinition(demo('three_link_arm.json'));
+    m.startSimulation();
+    expect(m.drive('j1', 2).converged).toBe(true);
+    expect(m.getActuatorValue('j1')).toBeCloseTo(2);
+    m.addLoop();
+    const result = m.drive('j1', -2);
+    expect(result.error).toContain('not found');
+    expect(m.getActuatorValue('j1')).toBeLessThan(2);
+    expect(m.getActuatorValue('j1')).toBeGreaterThan(-2);
+  });
+});

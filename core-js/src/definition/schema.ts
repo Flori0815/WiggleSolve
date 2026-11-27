@@ -59,6 +59,8 @@ export const ActuatorDefSchema = z.object({
    * one torque shaft. Each moves its bodies about its own pivot (same axis
    * name, in that pivot's frame) by `ratio` × the actuator travel.
    */
+  /** Optional drive group (e.g. "Flaps"); the UI offers one master slider per group. */
+  group: z.string().optional(),
   outputs: z.array(z.object({
     pivotNode: z.string(),
     movingBodies: z.array(z.string()),

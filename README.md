@@ -51,4 +51,4 @@ sliders; the solver re-closes all loops on every change.
 - [Definition format](docs/definition-format.md)
 - [Development](docs/development.md)
 - [MCP server & templates](docs/mcp-server.md)
-- [Flap systems](docs/flap-systems.md)
+- [High-lift & control surfaces](docs/high-lift-systems.md)

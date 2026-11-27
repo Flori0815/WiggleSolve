@@ -35,7 +35,10 @@ highlighted.
 ## Simulate mode
 
 Each actuator has a slider and a numeric field (degrees for rotary, metres for
-linear drives) limited to its range. **Reset all** returns every drive to 0.
+linear drives) limited to its range. Actuators with a `group` are collected
+under one master slider (0–100 % of every member's travel); the individual
+drives are folded below it. Large moves are followed in small steps (≤ 5 % of
+the travel), as a real drive would, so closed loops stay on their branch. **Reset all** returns every drive to 0.
 The status banner reports whether all loops closed, did not converge, or
 could not run (e.g. a loop references a missing node).
 

@@ -1,6 +1,7 @@
 import { IDENTITY_MAT16 } from '../math/matrixHelpers';
 import { beamMesh, loftMesh } from '../visual/mesh';
-import type { MeshVisual, Point2 } from '../visual/mesh';
+import { sweptFrame } from './geometry';
+import type { MeshVisual, Point2, Point3 } from '../visual/mesh';
 import type {
   ActuatorDef,
   BodyDef,
@@ -74,6 +75,14 @@ export interface DroppedHingeFlapParams {
   sphericalRange: [number, number];
   /** Out-of-plane tilt of the drive struts on their rod ends [min, max] in rad. */
   strutTilt: [number, number];
+  /** Scales the whole section geometry about the hinge point (1 = profile as given). */
+  chordScale: number;
+  /** World position of the root hinge point; omitted = section coordinates are world coordinates. */
+  origin?: [number, number, number];
+  /** Draw the wing spar (off when the flap is part of a larger wing model). */
+  wingStructure: boolean;
+  /** Drive group of the two rotary actuators (see ActuatorDef.group). */
+  actuatorGroup?: string;
   /** Loop convergence tolerance (length units). */
   tolerance: number;
   /** Levenberg-Marquardt damping λ of the simultaneous loop closure. */
@@ -117,6 +126,8 @@ export const DROPPED_HINGE_FLAP_DEFAULTS: DroppedHingeFlapParams = {
   swivelRange: [-15 * DEG, 15 * DEG],
   sphericalRange: [-45 * DEG, 45 * DEG],
   strutTilt: [-10 * DEG, 10 * DEG],
+  chordScale: 1,
+  wingStructure: true,
   tolerance: 1e-5,
   damping: 1e-3,
 };
@@ -147,7 +158,6 @@ export const FLAP_SPLIT_JOINT = 'flap_split_rot';
 
 const COLORS = { wing: '#64748b', flap: '#94a3b8', drive: '#f59e0b', lever: '#38bdf8' };
 
-type Point3 = [number, number, number];
 
 /**
  * Geometry helper: sections live in the plane normal to the hinge line
@@ -157,22 +167,17 @@ type Point3 = [number, number, number];
  */
 function hingeFrame(p: DroppedHingeFlapParams) {
   const [root, tip] = p.span;
-  const c = Math.cos(p.hingeSweep);
-  const s = Math.sin(p.hingeSweep);
-  const scale = (z: number) => 1 + (p.taper - 1) * (z - root) / (tip - root);
-  const toWorld = ([x, y, z]: Point3): Point3 => [c * x + s * z, y, -s * x + c * z];
+  const scale = (z: number) => p.chordScale * (1 + (p.taper - 1) * (z - root) / (tip - root));
+  const { rotate, matrix } = sweptFrame(p.hingeSweep);
+  const hingeRoot = rotate([p.hinge[0], p.hinge[1], root]);
+  const offset: Point3 = p.origin ? [p.origin[0] - hingeRoot[0], p.origin[1] - hingeRoot[1], p.origin[2] - hingeRoot[2]] : [0, 0, 0];
   const point = ([x, y]: Point2, z: number): Point3 => {
     const k = scale(z);
-    return toWorld([p.hinge[0] + k * (x - p.hinge[0]), p.hinge[1] + k * (y - p.hinge[1]), z]);
+    const [wx, wy, wz] = rotate([p.hinge[0] + k * (x - p.hinge[0]), p.hinge[1] + k * (y - p.hinge[1]), z]);
+    return [wx + offset[0], wy + offset[1], wz + offset[2]];
   };
   /** Frame at a section point; its x axis is rotated by `angle` about the hinge axis. */
-  const frame = (q: Point2, z: number, angle = 0): number[] => {
-    const ca = Math.cos(angle);
-    const sa = Math.sin(angle);
-    const [x, y, zz] = point(q, z);
-    const r = (v: number) => Math.round(v * 1e12) / 1e12 || 0;
-    return [c * ca, sa, -s * ca, 0, -c * sa, ca, s * sa, 0, s, 0, c, 0, x, y, zz, 1].map(r);
-  };
+  const frame = (q: Point2, z: number, angle = 0): number[] => matrix(point(q, z), angle);
   return { scale, point, frame, section: (pts: Point2[], z: number) => pts.map(q => point(q, z)) };
 }
 
@@ -213,7 +218,7 @@ export function droppedHingeFlap(overrides: Partial<DroppedHingeFlapParams> = {}
   const [root, tip] = p.span;
   const g = hingeFrame(p);
   const node = (id: string, q: Point2, z: number, angle = 0) => ({ id, localTransform: g.frame(q, z, angle) });
-  const gap = 0.005;
+  const gap = 0.005 * p.chordScale;
   const panelSpans: Array<[number, number]> = [[root, p.splitStation - gap], [p.splitStation + gap, tip]];
   const fixed = p.supports.findIndex(s => s.spanwise === 'fixed') + 1;
   const free = 3 - fixed;
@@ -229,15 +234,17 @@ export function droppedHingeFlap(overrides: Partial<DroppedHingeFlapParams> = {}
 
   // ── Bodies ────────────────────────────────────────────────────────────────
   const ribProfile: Point2[] = [[0, -0.06], [p.hinge[0] + 0.04, p.hinge[1] - 0.02], [p.hinge[0] + 0.04, p.hinge[1] + 0.04], [0, 0.06]];
-  const wingVisuals: MeshVisual[] = [
-    loftMesh(g.section([[-0.03, -0.06], [0.03, -0.06], [0.03, 0.06], [-0.03, 0.06]], root), g.section([[-0.03, -0.06], [0.03, -0.06], [0.03, 0.06], [-0.03, 0.06]], tip), { color: COLORS.wing }),
-  ];
+  const spar: Point2[] = [[-0.03, -0.06], [0.03, -0.06], [0.03, 0.06], [-0.03, 0.06]];
+  const wingVisuals: MeshVisual[] = p.wingStructure
+    ? [loftMesh(g.section(spar, root), g.section(spar, tip), { color: COLORS.wing })]
+    : [];
+  const t = 0.02 * p.chordScale;
   const wingNodes: BodyDef['nodes'] = [];
   for (const i of [1, 2]) {
     const id = flapIds(i);
     const z = station(i);
     wingNodes.push(node(id.hinge, p.hinge, z), node(id.actuatorAxis, p.actuatorAxis, z));
-    wingVisuals.push(loftMesh(g.section(ribProfile, z - 0.06), g.section(ribProfile, z - 0.04), { color: COLORS.wing }));
+    wingVisuals.push(loftMesh(g.section(ribProfile, z - 3 * t), g.section(ribProfile, z - 2 * t), { color: COLORS.wing }));
   }
   const bodies: BodyDef[] = [body('wing', wingNodes, wingVisuals)];
 
@@ -256,7 +263,7 @@ export function droppedHingeFlap(overrides: Partial<DroppedHingeFlapParams> = {}
       body(id.strut, [node(id.strutTop, crankTip, z, strutAngle), node(id.strutEnd, p.lug, z)], [beam(crankTip, p.lug, z, 0.02, COLORS.drive)]),
       body(id.panel, flapNodes, [
         loftMesh(g.section(p.profile, zIn), g.section(p.profile, zOut), { color: COLORS.flap, opacity: 0.6 }),
-        loftMesh(g.section(bracketProfile, z - 0.01), g.section(bracketProfile, z + 0.01), { color: COLORS.flap }),
+        loftMesh(g.section(bracketProfile, z - t / 2), g.section(bracketProfile, z + t / 2), { color: COLORS.flap }),
       ]),
     );
     if (i === free) {
@@ -277,7 +284,10 @@ export function droppedHingeFlap(overrides: Partial<DroppedHingeFlapParams> = {}
   const actuators: ActuatorDef[] = [1, 2].map(i => {
     const id = flapIds(i);
     joints.push({ id: id.actuator, type: 'revolute', axis: [0, 0, 1], limits: [...p.driveRange] });
-    return { id: id.actuator, type: 'revolute', axis: 'z', pivotNode: id.actuatorAxis, movingBodies: [id.crank, id.strut] };
+    return {
+      id: id.actuator, type: 'revolute', axis: 'z', pivotNode: id.actuatorAxis, movingBodies: [id.crank, id.strut],
+      ...(p.actuatorGroup ? { group: p.actuatorGroup } : {}),
+    };
   });
   const [sphX, sphY, sphZ] = F.sphericalJoints;
   joints.push(
