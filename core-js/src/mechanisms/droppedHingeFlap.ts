@@ -1,4 +1,5 @@
 import { IDENTITY_MAT16, rotationZMat16, translationMat16 } from '../math/matrixHelpers';
+import type { Point2 } from '../visual/mesh';
 import type {
   ActuatorDef,
   BodyDef,
@@ -65,7 +66,6 @@ export interface SupportSpec {
   spanwise: 'fixed' | 'free';
 }
 
-export type Point2 = [number, number];
 
 const DEG = Math.PI / 180;
 

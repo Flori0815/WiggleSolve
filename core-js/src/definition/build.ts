@@ -60,6 +60,7 @@ export function buildSystem(def: MechanismDefinition, system = new KinematicSyst
       body.transform = matrixFromArray(bodyDef.transform);
       explicitlyPlaced.add(bodyDef.id);
     }
+    body.visuals = (bodyDef.visuals ?? []).map(v => ({ ...v, vertices: [...v.vertices], indices: [...v.indices] }));
     for (const nodeDef of bodyDef.nodes) {
       const node = new Node(nodeDef.id);
       node.localTransform = matrixFromArray(nodeDef.localTransform);
